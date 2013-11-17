@@ -91,9 +91,9 @@ Returns HTTP status code `200` on success.
 ```clj
 (post-points c "logins"
   [
-    {:email "johh@gmail.com"}
-    {:email "johh@yahoo.com"}
-    {:email "johh@hotmail.com"}
+    {:email "john@gmail.com"}
+    {:email "john@yahoo.com"}
+    {:email "john@hotmail.com"}
     {:email "jill@gmail.com"}
     {:email "jason@gmail.com"}
     {:email "alice@yahoo.com"}
