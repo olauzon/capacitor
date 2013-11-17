@@ -1,4 +1,4 @@
-Capacitor
+Capacitor  [![Build Status](https://travis-ci.org/olauzon/capacitor.png?branch=master)](https://travis-ci.org/olauzon/capacitor)
 =========
 
 A Clojure client for [InfluxDB](http://influxdb.org), a scalable open-source
