@@ -140,7 +140,7 @@ Returns:
 
 Returns:
 
-```
+```clj
 [{:name "logins", :count 7, :sequence_number 1, :time 1384662540000}
  {:name "logins", :count 7, :sequence_number 1, :time 1384661760000}]
 ```
