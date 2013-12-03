@@ -17,7 +17,7 @@ Capacitor is distributed via [Clojars](https://clojars.org/capacitor). Add the
 following to your dependencies in `project.clj`:
 
 ```clj
-:dependencies [[capacitor "0.1.0-SNAPSHOT"]]
+:dependencies [[capacitor "0.1.0"]]
 ```
 
 
