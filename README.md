@@ -17,7 +17,7 @@ Capacitor is distributed via [Clojars](https://clojars.org/capacitor). Add the
 following to your dependencies in `project.clj`:
 
 ```clj
-:dependencies [[capacitor "0.0.1-SNAPSHOT"]]
+:dependencies [[capacitor "0.1.0-SNAPSHOT"]]
 ```
 
 
@@ -107,14 +107,14 @@ For this example, assume that some time passes and you resubmit the same query.
 ### Write SQLish queries
 
 ```clj
-(def query-01
+(def query-00
   (str
     "SELECT COUNT(email) "
     "FROM logins "
     "GROUP BY time(10m) "
     "WHERE email =~ /.*gmail\\.com/"))
 
-(def query-02
+(def query-01
   (str
     "SELECT COUNT(email) "
     "FROM logins "
@@ -124,7 +124,7 @@ For this example, assume that some time passes and you resubmit the same query.
 ### Submit queries
 
 ```clj
-(get-query c query-01)
+(get-query c query-00)
 ```
 
 Returns:
@@ -135,7 +135,7 @@ Returns:
 ```
 
 ```clj
-(get-query c query-02)
+(get-query c query-01)
 ```
 
 Returns:
@@ -145,8 +145,89 @@ Returns:
  {:name "logins", :count 7, :sequence_number 1, :time 1384661760000}]
 ```
 
-See `examples/basic.clj` for these examples in one file.
+See [examples/basic.clj](https://github.com/olauzon/capacitor/blob/master/examples/basic.clj) for these examples in one file.
 
+
+Async API
+---------
+
+Capacitor has an asynchronous API for event batch accumulation and submission.
+
+```clj
+(use '[capacitor.core])
+(use '[capacitor.async])
+```
+
+Define an InfluxDB client (see basic.clj for example)
+```clj
+(def c
+  (make-client {
+    :db       "my-new-db"
+    :username "myuser"
+    :password "mypassword" }))
+```
+
+Make a channel to buffer incoming events
+```clj
+(def events-in (atom (make-chan)))
+```
+
+Make a channel to collect post responses
+```clj
+(def resp-out (atom (make-chan)))
+```
+
+Start the run loop with a batch size of max 10 events and max 5 seconds
+```clj
+(run! @events-in @resp-out c 10 5000)
+```
+
+Enqueue events
+```clj
+(enqueue @events-in {:email "paul@gmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "john@gmail.com"
+                     :series "signups"})
+
+(enqueue @events-in {:email "ringo@gmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "george@gmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "syd@hotmail.com"
+                     :series "signups"})
+
+(enqueue @events-in {:email "roger@hotmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "nick@hotmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "rick@hotmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "david@hotmail.com"
+                     :series "logins"})
+
+(enqueue @events-in {:email "sting@yahoo.com"
+                     :series "signups"})
+```
+
+Query the db
+```clj
+(def query-00
+  (str
+    "SELECT COUNT(email) "
+    "FROM logins "
+    "GROUP BY time(1s)"))
+
+(get-query c query-00)
+```
+
+
+See [examples/async.clj](https://github.com/olauzon/capacitor/blob/master/examples/async.clj) for these examples in one file.
 
 ## License
 

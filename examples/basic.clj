@@ -1,5 +1,4 @@
-(ns my.app
-  (:use [capacitor.core]))
+(use '[capacitor.core])
 
 (def client
   (make-client {:db "my-new-db"}))
@@ -31,19 +30,19 @@
     {:email "alice@yahoo.com"}
     {:email "bob@mac.com"} ])
 
-(def query-01
+(def query-00
   (str
     "SELECT COUNT(email) "
     "FROM logins "
     "GROUP BY time(10m) "
     "WHERE email =~ /.*gmail\\.com/"))
 
-(def query-02
+(def query-01
   (str
     "SELECT COUNT(email) "
     "FROM logins "
     "GROUP BY time(1m)"))
 
-(get-query c query-01)
+(get-query c query-00)
 
-(get-query c query-02)
+(get-query c query-01)

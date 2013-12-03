@@ -44,27 +44,27 @@
         :password "world"
         :db       "my-database-name" })))))
 
-(deftest gen-url-00
+(deftest test-gen-url-00
   (testing "create-db"
     (is (= "http://localhost:8086/db?u=root&p=root"
            (gen-url (make-client {}) :create-db)))))
 
-(deftest gen-url-01
+(deftest test-gen-url-01
   (testing "delete-db"
     (is (= "http://localhost:8086/db/my-database-name?u=root&p=root"
            (gen-url (make-client {:db "my-database-name"}) :delete-db)))))
 
-(deftest gen-url-02
+(deftest test-gen-url-02
   (testing "get-dbs"
     (is (= "http://localhost:8086/dbs?u=root&p=root"
            (gen-url (make-client {}) :get-dbs)))))
 
-(deftest gen-url-03
+(deftest test-gen-url-03
   (testing "create-db-user"
     (is (= "http://localhost:8086/db/my-db/users?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) :create-db-user)))))
 
-(deftest gen-url-04
+(deftest test-gen-url-04
   (testing "post-points"
     (is (= "http://localhost:8086/db/my-db/series?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) :post-points)))))
@@ -79,7 +79,7 @@
     (is (= "http://localhost:8086/db/my-db/series?u=root&p=root&q="
            (gen-url (make-client {:db "my-db"}) :get-query)))))
 
-(deftest format-results-00
+(deftest test-format-results-00
   (testing "format-results"
     (is (= [
              {
@@ -108,3 +108,45 @@
               }
             ]
            (format-results fixture-results-00)))))
+
+(deftest test-make-payload-00
+  (testing "format-results" (is (=
+      [
+        {
+          :name    "test-series"
+          :points  '(("miles@gmail.com")
+                     ("charlie@gmail.com")
+                     ("john@gmail.com"))
+          :columns '(:email)
+         }
+       ]
+    (make-payload "test-series" [
+        {:email "miles@gmail.com"}
+        {:email "charlie@gmail.com"}
+        {:email "john@gmail.com"}
+      ])))))
+
+(deftest test-make-payload-00
+  (testing "format-results" (is (=
+      [
+        {
+          :name    "test-series-00"
+          :points  '(("miles@gmail.com" "111")
+                     ("charlie@gmail.com" nil))
+          :columns '(:email :addr)
+         }
+        {
+          :name    "test-series-01"
+          :points  '(("john@gmail.com"))
+          :columns '(:email)
+         }
+       ]
+    (make-payload [
+        {:email "miles@gmail.com"
+         :addr  "111"
+         :series "test-series-00"}
+        {:email "charlie@gmail.com"
+         :series "test-series-00"}
+        {:email "john@gmail.com"
+         :series "test-series-01"}
+      ])))))

@@ -127,15 +127,43 @@
       :content-type          :json
       :throw-entire-message? true })))
 
+(defn format-payload
+  [res]
+  (let [res-seq (seq res)
+        seq-cnt (dec (count res-seq))]
+  (loop [curr-res []
+         i 0]
+    (let [rec (nth res-seq i)
+          series-name (first rec)
+          values (last rec)
+          data    (flatten (into [] [values]))
+          columns (distinct (flatten (map keys data)))
+          points  (map (fn [d] (map #(d %) columns)) data)
+          new-res (conj curr-res
+                        [{ :name    series-name
+                           :points  points
+                           :columns columns }])]
+      (if (>= i seq-cnt)
+        (vec (flatten new-res))
+        (recur new-res (inc i)))))))
+
 (defn make-payload
   "Returns normalized columns to post points to database"
-  [series-name values]
-  (let [data    (flatten (into [] [values]))
-        columns (distinct (flatten (map keys data)))
-        points  (map (fn [d] (map #(d %) columns)) data)]
-    [{ :name    series-name
-       :points  points
-       :columns columns }]))
+  ([values]
+    (let [data   (flatten (into [] [values]))
+          number (dec (count data))]
+      (loop [i   0
+             res {}]
+        (let [d           (nth data i)
+              series      (merge {(d :series) []} res)
+              series-data (conj (series (d :series))
+                                (dissoc d :series))
+              new-res     (assoc series (d :series) series-data)]
+          (if (>= i number)
+            (format-payload new-res)
+            (recur (inc i) new-res))))))
+  ([series-name values]
+    (make-payload (map #(assoc % :series series-name) values))))
 
 (defn post-points
   "Post points to database. Returns HTTP status on success.
@@ -148,8 +176,8 @@
   [client query]
   (let [url (str (gen-url client :get-query) (URLEncoder/encode query))]
     (http-client/get url {
-      :socket-timeout        1000  ;; in milliseconds
-      :conn-timeout          1000  ;; in milliseconds
+      ;;:socket-timeout        1000  ;; in milliseconds
+      ;;:conn-timeout          1000  ;; in milliseconds
       :accept                :json
       :throw-entire-message? true })))
 
