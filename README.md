@@ -133,7 +133,7 @@ Returns:
 ```
 
 ```clj
-(get-query c query-01)
+(influx/get-query c query-01)
 ```
 
 Returns:
