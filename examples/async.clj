@@ -1,52 +1,70 @@
-(use '[capacitor.core])
-(use '[capacitor.async])
+;; Base InfluxDB library
+(require '[capacitor.core :as influx])
+
+;; Async API
+(require '[capacitor.async :as influx-async])
 
 ;; Define an InfluxDB client (see basic.clj for example)
 (def c
-  (make-client {
+  (influx/make-client {
     :db       "my-new-db"
     :username "myuser"
     :password "mypassword" }))
 
 ;; Make a channel to buffer incoming events
-(def events-in (atom (make-chan)))
+(def events-in (atom (influx-async/make-chan)))
 
 ;; Make a channel to collect post responses
-(def resp-out (atom (make-chan)))
+(def resp-out (atom (influx-async/make-chan)))
 
 ;; Start the run loop with a batch size of max 10 events and max 5 seconds
-(run! @events-in @resp-out c 10 5000)
+(influx-async/run! @events-in @resp-out c 10 5000)
 
 ;; Enqueue events
-(enqueue @events-in {:email "paul@gmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "paul@gmail.com" })
 
-(enqueue @events-in {:email "john@gmail.com"
-                     :series "signups"})
+(influx-async/enqueue @events-in {
+  :series "signups"
+  :email  "john@gmail.com" })
 
-(enqueue @events-in {:email "ringo@gmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "ringo@gmail.com" })
 
-(enqueue @events-in {:email "george@gmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "george@gmail.com" })
 
-(enqueue @events-in {:email "syd@hotmail.com"
-                     :series "signups"})
+(influx-async/enqueue @events-in {
+  :series "signups"
+  :email  "syd@hotmail.com" })
 
-(enqueue @events-in {:email "roger@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "roger@hotmail.com" })
 
-(enqueue @events-in {:email "nick@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "nick@hotmail.com" })
 
-(enqueue @events-in {:email "rick@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "rick@hotmail.com" })
 
-(enqueue @events-in {:email "david@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "david@hotmail.com" })
 
-(enqueue @events-in {:email "sting@yahoo.com"
-                     :series "signups"})
+(influx-async/enqueue @events-in {
+  :series "signups"
+  :email  "sting@yahoo.com" })
+
+(dotimes [i 12]
+  (influx-async/enqueue @events-in {
+    :series "logins"
+    :email  (str "i" i "@i.com") }))
 
 (def query-00
   (str
@@ -54,4 +72,4 @@
     "FROM logins "
     "GROUP BY time(1s)"))
 
-(get-query c query-00)
+(influx/get-query c query-00)

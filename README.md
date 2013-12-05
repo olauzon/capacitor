@@ -24,18 +24,17 @@ following to your dependencies in `project.clj`:
 Usage
 -----
 
-### Require in your app namespace
+### Require in your app
 
 ```clj
-(ns my-app.core
-  (:use [capacitor.core]))
+(require '[capacitor.core :as influx])
 ```
 
 ### Configure a client
 
 ```clj
 (def client
-  (make-client {:db "my-new-db"}))
+  (influx/make-client {:db "my-new-db"}))
 ```
 
 The `default-client` options are:
@@ -52,7 +51,7 @@ The `default-client` options are:
 ### Create the configured database
 
 ```clj
-(create-db client)
+(influx/create-db client)
 ;=> 201
 ```
 
@@ -61,7 +60,7 @@ Returns HTTP status code `201` on success.
 ### Delete the configured database
 
 ```clj
-(delete-db client)
+(influx/delete-db client)
 ;=> 204
 ```
 
@@ -70,7 +69,7 @@ Returns HTTP status code `204` on success.
 ### Create a database user
 
 ```clj
-(create-db-user client "myuser" "mypassword")
+(influx/create-db-user client "myuser" "mypassword")
 ;=> 200
 ```
 
@@ -80,16 +79,16 @@ Returns HTTP status code `200` on success.
 
 ```clj
 (def c
-  (make-client {
+  (influx/make-client {
     :db       "my-new-db"
     :username "myuser"
     :password "mypassword" }))
 ```
 
-### Post time series data to the database
+### Post events to "logins" time series
 
 ```clj
-(post-points c "logins"
+(influx/post-points c "logins"
   [
     {:email "john@gmail.com"}
     {:email "john@yahoo.com"}
@@ -101,7 +100,6 @@ Returns HTTP status code `200` on success.
 ;=> 200
 ```
 Returns an HTTP status code `200` on success.
-For this example, assume that some time passes and you resubmit the same query.
 
 
 ### Write SQLish queries
@@ -124,7 +122,7 @@ For this example, assume that some time passes and you resubmit the same query.
 ### Submit queries
 
 ```clj
-(get-query c query-00)
+(influx/get-query c query-00)
 ```
 
 Returns:
@@ -154,14 +152,17 @@ Async API
 Capacitor has an asynchronous API for event batch accumulation and submission.
 
 ```clj
-(use '[capacitor.core])
-(use '[capacitor.async])
+;; Base InfluxDB library
+(require '[capacitor.core :as influx])
+
+;; Async API
+(require '[capacitor.async :as influx-async])
 ```
 
 Define an InfluxDB client (see basic.clj for example)
 ```clj
 (def c
-  (make-client {
+  (influx/make-client {
     :db       "my-new-db"
     :username "myuser"
     :password "mypassword" }))
@@ -169,50 +170,65 @@ Define an InfluxDB client (see basic.clj for example)
 
 Make a channel to buffer incoming events
 ```clj
-(def events-in (atom (make-chan)))
+(def events-in (atom (influx-async/make-chan)))
 ```
 
 Make a channel to collect post responses
 ```clj
-(def resp-out (atom (make-chan)))
+(def resp-out (atom (influx-async/make-chan)))
 ```
 
 Start the run loop with a batch size of max 10 events and max 5 seconds
 ```clj
-(run! @events-in @resp-out c 10 5000)
+(influx-async/run! @events-in @resp-out c 10 5000)
 ```
 
 Enqueue events
 ```clj
-(enqueue @events-in {:email "paul@gmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "paul@gmail.com" })
 
-(enqueue @events-in {:email "john@gmail.com"
-                     :series "signups"})
+(influx-async/enqueue @events-in {
+  :series "signups"
+  :email  "john@gmail.com" })
 
-(enqueue @events-in {:email "ringo@gmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "ringo@gmail.com" })
 
-(enqueue @events-in {:email "george@gmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "george@gmail.com" })
 
-(enqueue @events-in {:email "syd@hotmail.com"
-                     :series "signups"})
+(influx-async/enqueue @events-in {
+  :series "signups"
+  :email  "syd@hotmail.com" })
 
-(enqueue @events-in {:email "roger@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "roger@hotmail.com" })
 
-(enqueue @events-in {:email "nick@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "nick@hotmail.com" })
 
-(enqueue @events-in {:email "rick@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "rick@hotmail.com" })
 
-(enqueue @events-in {:email "david@hotmail.com"
-                     :series "logins"})
+(influx-async/enqueue @events-in {
+  :series "logins"
+  :email  "david@hotmail.com" })
 
-(enqueue @events-in {:email "sting@yahoo.com"
-                     :series "signups"})
+(influx-async/enqueue @events-in {
+  :series "signups"
+  :email  "sting@yahoo.com" })
+
+(dotimes [i 12]
+  (influx-async/enqueue @events-in {
+    :series "logins"
+    :email  (str "i" i "@i.com") }))
 ```
 
 Query the db
@@ -223,7 +239,7 @@ Query the db
     "FROM logins "
     "GROUP BY time(1s)"))
 
-(get-query c query-00)
+(influx/get-query c query-00)
 ```
 
 

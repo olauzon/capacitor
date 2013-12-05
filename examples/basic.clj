@@ -1,26 +1,26 @@
-(use '[capacitor.core])
+(require '[capacitor.core :as influx])
 
 (def client
-  (make-client {:db "my-new-db"}))
+  (influx/make-client {:db "my-new-db"}))
 
-(create-db client)
+(influx/create-db client)
 
-(delete-db client)
+(influx/delete-db client)
 
-(delete-db client)
+(influx/delete-db client)
 ;; => Exception
 
-(create-db client)
+(influx/create-db client)
 
-(create-db-user client "myuser" "mypassword")
+(influx/create-db-user client "myuser" "mypassword")
 
 (def c
-  (make-client {
+  (influx/make-client {
     :db       "my-new-db"
     :username "myuser"
     :password "mypassword" }))
 
-(post-points c "logins"
+(influx/post-points c "logins"
   [
     {:email "john@gmail.com"}
     {:email "john@yahoo.com"}
@@ -43,6 +43,6 @@
     "FROM logins "
     "GROUP BY time(1m)"))
 
-(get-query c query-00)
+(influx/get-query c query-00)
 
-(get-query c query-01)
+(influx/get-query c query-01)
