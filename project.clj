@@ -12,5 +12,4 @@
     [cheshire               "5.2.0"]]
   :plugins [[codox "0.6.6"]]
   :dev-dependencies [[codox "0.6.6"]]
-  :aot :all
-  :main capacitor.core)
+  :aot :all)

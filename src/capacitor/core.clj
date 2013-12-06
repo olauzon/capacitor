@@ -102,7 +102,7 @@
   [client username password]
   (let [url  (gen-url client :create-db-user)
         body (json/generate-string {
-               :username username
+               :name     username
                :password password })]
     (http-client/post url {
       :body                  body
