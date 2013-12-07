@@ -16,12 +16,12 @@
   "Returns a map representing an HTTP client configuration.
 
     Valid options:
-      :hostname  the hostname to connect to (default: \"localhost\")
-      :scheme \"http://\" or \"https://\" (default: \"http://\")
-      :port the port to connect to (default: 8086)
-      :username the username to use when executing commands (default \"root\")
-      :password the password associated with the username (default \"root\")
-      :db the database to use (default: \"default-db\")"
+      :hostname  (default: \"localhost\")
+      :scheme    (default: \"http://\")
+      :port      (default: 8086)
+      :username  (default \"root\")
+      :password  (default \"root\")
+      :db        (default: \"default-db\")"
   [opts]
   (merge default-client opts))
 

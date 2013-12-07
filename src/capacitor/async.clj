@@ -7,6 +7,17 @@
                                       post-points-req
                                       post-points]]))
 
+(defn make-chan
+  "Make a sliding buffer channel for async input or output."
+  ([]
+    (async/chan (async/sliding-buffer 100000)))
+  ([s]
+    (async/chan (async/sliding-buffer s))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ## Basic async API
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn create-db-req
   "Create database defined in client. Returns raw HTTP response."
   [client]
@@ -20,10 +31,21 @@
       :throw-entire-message? true })))
 
 (defn create-db
-  "Create database defined in client. Returns HTTP status on success."
-  [client]
-  (let [resp (create-db-req client)]
-    @resp))
+  "Create database defined in client. Returns HTTP response in `r-in` channel."
+  [client r-in]
+  (async/go (async/>! r-in (create-db-req client))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ## Event buffering and queuing
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn enqueue
+  "Append event to `e-in` channel.
+  The `:time` attribute (in ms) is automatically added when the event is added."
+  [e-in event]
+  (let [ts (System/currentTimeMillis)]
+    (async/go (async/>! e-in
+      (merge { :time ts } event)))))
 
 (defn post-points-req
   [client points]
@@ -37,42 +59,20 @@
       :throw-entire-message? true })))
 
 (defn post-points
-  "Post points to database. Returns HTTP status on success.
+  "Post points to database. Returns HTTP response.
   Points should be submitted as a vector of maps."
   [client values]
   ;;(println "posting")
   (post-points-req client (make-payload values)))
 
-(defn http-post-chan
-  [url options]
-  (let [c (async/chan)]
-    ;;(println url)
-    (http-client/post url options
-      (fn [r] (async/put! c r)))
-    c))
-
-(defn http-get
-  [url]
-  (let [c (async/chan)]
-    ;;(println url)
-    (http-client/get url
-      (fn [r] (async/put! c r)))
-    c))
-
-; Sliding buffer (aka. drop oldest)
-(defn make-chan
-  ([]
-    (async/chan (async/sliding-buffer 100000)))
-  ([s]
-    (async/chan (async/sliding-buffer s))))
-
-(defn enqueue
-  [e-in e]
-  (let [ts (System/currentTimeMillis)]
-    (async/go (async/>! e-in
-      (merge { :time ts } e)))))
+;;
+;; ### Main run loop
+;;
 
 (defn run!
+  "Buffers events accumulating from `e-in` for a maximum batch of `size` or
+  `ms` milliseconds. Responses are returned in `r-out` to be consumed by a
+  monitoring loop."
   [e-in r-out client size ms]
   (let [cnt-size (dec size)]
     (async/thread
@@ -86,7 +86,7 @@
                    (post-points client (conj points e)))
                   (recur [] (async/timeout ms)))
               (recur (conj points e) to)))
-          to ([t]
+          to ([_]
             (if (> (count points) 0)
               (do
                 (async/go async/>! r-out
