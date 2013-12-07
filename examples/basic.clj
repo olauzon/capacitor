@@ -20,15 +20,14 @@
     :username "myuser"
     :password "mypassword" }))
 
-(influx/post-points c "logins"
-  [
-    {:email "john@gmail.com"}
-    {:email "john@yahoo.com"}
-    {:email "john@hotmail.com"}
-    {:email "jill@gmail.com"}
-    {:email "jason@gmail.com"}
-    {:email "alice@yahoo.com"}
-    {:email "bob@mac.com"} ])
+(influx/post-points c "logins" [
+  {:email "john@gmail.com"}
+  {:email "john@yahoo.com"}
+  {:email "john@hotmail.com"}
+  {:email "jill@gmail.com"}
+  {:email "jason@gmail.com"}
+  {:email "alice@yahoo.com"}
+  {:email "bob@mac.com"} ])
 
 (def query-00
   (str

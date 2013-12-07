@@ -40,12 +40,12 @@ Usage
 The `default-client` options are:
 
 ```clj
-{  :host     "localhost"
-   :scheme   "http"
-   :port     8086
-   :username "root"
-   :password "root"
-   :db       "default-db" }
+{ :host     "localhost"
+  :scheme   "http"
+  :port     8086
+  :username "root"
+  :password "root"
+  :db       "default-db" }
 ```
 
 ### Create the configured database
@@ -88,15 +88,14 @@ Returns HTTP status code `200` on success.
 ### Post events to "logins" time series
 
 ```clj
-(influx/post-points c "logins"
-  [
-    {:email "john@gmail.com"}
-    {:email "john@yahoo.com"}
-    {:email "john@hotmail.com"}
-    {:email "jill@gmail.com"}
-    {:email "jason@gmail.com"}
-    {:email "alice@yahoo.com"}
-    {:email "bob@mac.com"} ])
+(influx/post-points c "logins" [
+  {:email "john@gmail.com"}
+  {:email "john@yahoo.com"}
+  {:email "john@hotmail.com"}
+  {:email "jill@gmail.com"}
+  {:email "jason@gmail.com"}
+  {:email "alice@yahoo.com"}
+  {:email "bob@mac.com"} ])
 ;=> 200
 ```
 Returns an HTTP status code `200` on success.
@@ -151,6 +150,8 @@ Async API
 
 Capacitor has an asynchronous API for event batch accumulation and submission.
 
+### Require in your app
+
 ```clj
 ;; Base InfluxDB library
 (require '[capacitor.core :as influx])
@@ -159,7 +160,8 @@ Capacitor has an asynchronous API for event batch accumulation and submission.
 (require '[capacitor.async :as influx-async])
 ```
 
-Define an InfluxDB client (see basic.clj for example)
+### Define an InfluxDB client
+
 ```clj
 (def c
   (influx/make-client {
@@ -168,22 +170,28 @@ Define an InfluxDB client (see basic.clj for example)
     :password "mypassword" }))
 ```
 
-Make a channel to buffer incoming events
+### Make a channel to buffer incoming events
+
 ```clj
 (def events-in (atom (influx-async/make-chan)))
 ```
 
-Make a channel to collect post responses
+### Make a channel to collect post responses
+
 ```clj
 (def resp-out (atom (influx-async/make-chan)))
 ```
 
-Start the run loop with a batch size of max 10 events and max 5 seconds
+### Start the batch processing loop
+
+With a batch size of max 10 events and max 5 seconds
+
 ```clj
 (influx-async/run! @events-in @resp-out c 10 5000)
 ```
 
-Enqueue events
+### Enqueue events
+
 ```clj
 (influx-async/enqueue @events-in {
   :series "logins"
@@ -231,7 +239,8 @@ Enqueue events
     :email  (str "i" i "@i.com") }))
 ```
 
-Query the db
+### Query the database
+
 ```clj
 (def query-00
   (str
