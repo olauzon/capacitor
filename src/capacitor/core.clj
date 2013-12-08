@@ -73,8 +73,8 @@
   [client]
   (let [url (gen-url client :delete-db)]
     (http-client/delete url {
-      :socket-timeout        1000 ;; in milliseconds
-      :conn-timeout          1000 ;; in milliseconds
+      :socket-timeout        10000 ;; in milliseconds
+      :conn-timeout          10000 ;; in milliseconds
       :throw-entire-message? true })))
 
 (defn delete-db
