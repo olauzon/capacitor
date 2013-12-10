@@ -3,6 +3,10 @@
             [cheshire.core   :as json])
   (import [java.net URLEncoder]))
 
+;;
+;; ## Client options
+;;
+
 (def default-client
   "Default HTTP client configuration"
    {  :host     "localhost"
@@ -16,7 +20,7 @@
   "Returns a map representing an HTTP client configuration.
 
     Valid options:
-      :hostname  (default: \"localhost\")
+      :host      (default: \"localhost\")
       :scheme    (default: \"http://\")
       :port      (default: 8086)
       :username  (default \"root\")
@@ -24,6 +28,10 @@
       :db        (default: \"default-db\")"
   [opts]
   (merge default-client opts))
+
+;;
+;; ## HTTP URL generation
+;;
 
 (defn gen-url-fn
   {:no-doc true}
@@ -50,6 +58,10 @@
 
 (def gen-url
   (memoize gen-url-fn))
+
+;;
+;; ## Database management
+;;
 
 (defn create-db-req
   "Create database defined in client. Returns raw HTTP response."
@@ -97,6 +109,10 @@
   [client]
   (json/parse-string ((get-dbs-req client) :body)))
 
+;;
+;; ## User management
+;;
+
 (defn create-db-user-req
   "Create new database user. Returns full HTTP response."
   [client username password]
@@ -115,6 +131,10 @@
   "Create new database user. Returns HTTP status on success."
   [client username password]
   ((create-db-user-req client username password) :status))
+
+;;
+;; ## Post time-series points
+;;
 
 (defn post-points-req
   [client points]
@@ -171,13 +191,18 @@
   [client series-name values]
   ((post-points-req client (make-payload series-name values)) :status))
 
+;;
+;; ## Query time-series
+;;
+
+
 (defn get-query-req
   "Submit query. Returns raw HTTP response."
   [client query]
   (let [url (str (gen-url client :get-query) (URLEncoder/encode query))]
     (http-client/get url {
-      ;;:socket-timeout        1000  ;; in milliseconds
-      ;;:conn-timeout          1000  ;; in milliseconds
+      :socket-timeout        10000  ;; in milliseconds
+      :conn-timeout          10000  ;; in milliseconds
       :accept                :json
       :throw-entire-message? true })))
 
@@ -196,7 +221,11 @@
   [results]
   (vec (flatten (map format-series-results results))))
 
+(defn read-result
+  [r]
+  (format-results (json/parse-string (r :body))))
+
 (defn get-query
-  "Submit query. Returns denormalized results set from string query"
+  "Submit query. Returns denormalized results set from string query."
   [client query]
-  (format-results (json/parse-string ((get-query-req client query) :body))))
+  (read-result (get-query-req client query)))

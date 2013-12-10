@@ -72,4 +72,33 @@
     "FROM logins "
     "GROUP BY time(1s)"))
 
+(def query-01
+  (str
+    "SELECT COUNT(email) "
+    "FROM logins "
+    "GROUP BY time(1m)"))
+
 (influx/get-query c query-00)
+
+
+;; Async queries
+
+;; Make a channel to collect query results
+(def results-out (atom (influx-async/make-chan)))
+
+(influx-async/get-query c query-00 @results-out)
+
+(influx-async/get-query c query-01 @results-out)
+
+(influx-async/read-results @results-out)
+
+
+;; Require core.async
+(require '[clojure.core.async :as async])
+
+(async/go
+  (loop [i 0]
+  (when-let [r (async/<! @results-out)]
+    (println (str "result " i ": "))
+    (println r)
+    (recur (inc i)))))
