@@ -83,19 +83,24 @@
              to     (async/timeout msecs)]
         (async/alt!!
           e-in ([e]
-            (if (>= (count points) cnt-size)
-              (do
+            (if (nil? e)
+              (if-not (empty? points)
                 (async/go async/>! r-out
-                   (post-points client (conj points e)))
+                  (post-points client points)))
+              (if (>= (count points) cnt-size)
+                (do
+                  (async/go async/>! r-out
+                    (post-points client (conj points e)))
                   (recur [] (async/timeout msecs)))
-              (recur (conj points e) to)))
+                (recur (conj points e) to))))
           to ([_]
-            (if (> (count points) 0)
+            (if (empty? points)
+              (recur points (async/timeout msecs))
               (do
                 (async/go async/>! r-out
                   (post-points client points))
-                (recur [] (async/timeout msecs)))
-              (recur points (async/timeout msecs)))))))))
+                (recur [] (async/timeout msecs)))))))
+      (println "run! loop stopped"))))
 
 ;;
 ;; ## Query time-series

@@ -251,6 +251,15 @@ With a batch size of max 10 events and max 5 seconds
 (influx/get-query c query-00)
 ```
 
+### Close the `run!` loop
+
+```clj
+;; Require core.async
+(require '[clojure.core.async :as async])
+
+(async/close! @events-in)
+```
+
 
 See [examples/async.clj](https://github.com/olauzon/capacitor/blob/master/examples/async.clj) for these examples in one file.
 

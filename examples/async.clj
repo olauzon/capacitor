@@ -4,6 +4,9 @@
 ;; Async API
 (require '[capacitor.async :as influx-async])
 
+;; Require core.async
+(require '[clojure.core.async :as async])
+
 ;; Define an InfluxDB client (see basic.clj for example)
 (def c
   (influx/make-client {
@@ -81,6 +84,9 @@
 (influx/get-query c query-00)
 
 
+;; Close the `run!` loop
+(async/close! @events-in)
+
 ;; Async queries
 
 ;; Make a channel to collect query results
@@ -92,9 +98,6 @@
 
 (influx-async/read-results @results-out)
 
-
-;; Require core.async
-(require '[clojure.core.async :as async])
 
 (async/go
   (loop [i 0]
