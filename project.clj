@@ -1,4 +1,4 @@
-(defproject capacitor "0.1.2-dev"
+(defproject capacitor "0.1.2"
   :description "A Clojure client for InfluxDB"
   :url         "https://github.com/olauzon/capacitor"
   :license {
@@ -16,7 +16,7 @@
   :dev-dependencies [[codox "0.6.6"]]
   :codox {
     :output-dir "docs/codox"
-    :src-dir-uri "http://github.com/olauzon/capacitor/blob/master/"
+    :src-dir-uri "http://github.com/olauzon/capacitor/blob/v0.1.2/"
     :src-linenum-anchor-prefix "L"
   }
   :aot :all)

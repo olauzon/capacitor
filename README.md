@@ -17,7 +17,7 @@ Capacitor is distributed via [Clojars](https://clojars.org/capacitor). Add the
 following to your dependencies in `project.clj`:
 
 ```clj
-:dependencies [[capacitor "0.1.1"]]
+:dependencies [[capacitor "0.1.2"]]
 ```
 
 
@@ -253,6 +253,13 @@ With a batch size of max 10 events and max 5 seconds
 
 
 See [examples/async.clj](https://github.com/olauzon/capacitor/blob/master/examples/async.clj) for these examples in one file.
+
+
+API Docs
+--------
+
+[API docs (codox)](http://olauzon.github.io/capacitor/docs/codox/index.html)
+[API docs (Marginalia)](http://olauzon.github.io/capacitor/docs/marg/index.html)
 
 ## License
 
