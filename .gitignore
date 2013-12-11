@@ -1,0 +1,16 @@
+/target
+/classes
+/checkouts
+/examples
+/src
+/test
+project.clj
+LICENSE
+README.md
+pom.xml
+pom.xml.asc
+.travis.yml
+*.jar
+*.class
+/.lein-*
+/.nrepl-port

@@ -1,0 +1,1 @@
+lein marg -d docs/marg -f index.html
