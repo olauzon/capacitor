@@ -15,59 +15,59 @@
     :password "mypassword" }))
 
 ;; Make a channel to buffer incoming events
-(def events-in (atom (influx-async/make-chan)))
+(def events-in (influx-async/make-chan))
 
 ;; Make a channel to collect post responses
-(def resp-out (atom (influx-async/make-chan)))
+(def resp-out (influx-async/make-chan))
 
 ;; Start the run loop with a batch size of max 10 events and max 5 seconds
-(influx-async/run! @events-in @resp-out c 10 5000)
+(influx-async/run! events-in resp-out c 10 5000)
 
 ;; Enqueue events
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "paul@gmail.com" })
+  :email  "paulgmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "signups"
-  :email  "john@gmail.com" })
+  :email  "johngmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "ringo@gmail.com" })
+  :email  "ringogmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "george@gmail.com" })
+  :email  "georgegmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "signups"
-  :email  "syd@hotmail.com" })
+  :email  "sydhotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "roger@hotmail.com" })
+  :email  "rogerhotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "nick@hotmail.com" })
+  :email  "nickhotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "rick@hotmail.com" })
+  :email  "rickhotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
-  :email  "david@hotmail.com" })
+  :email  "davidhotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "signups"
-  :email  "sting@yahoo.com" })
+  :email  "stingyahoo.com" })
 
 (dotimes [i 12]
-  (influx-async/enqueue @events-in {
+  (influx-async/enqueue events-in {
     :series "logins"
-    :email  (str "i" i "@i.com") }))
+    :email  (str i "@example.com") }))
 
 (def query-00
   (str
@@ -85,23 +85,23 @@
 
 
 ;; Close the `run!` loop
-(async/close! @events-in)
+(async/close! events-in)
 
 ;; Async queries
 
 ;; Make a channel to collect query results
-(def results-out (atom (influx-async/make-chan)))
+(def results-out (influx-async/make-chan))
 
-(influx-async/get-query c query-00 @results-out)
+(influx-async/get-query c query-00 results-out)
 
-(influx-async/get-query c query-01 @results-out)
+(influx-async/get-query c query-01 results-out)
 
-(influx-async/read-results @results-out)
+(influx-async/read-results results-out)
 
 
 (async/go
   (loop [i 0]
-  (when-let [r (async/<! @results-out)]
+  (when-let [r (async/<! results-out)]
     (println (str "result " i ": "))
     (println r)
     (recur (inc i)))))

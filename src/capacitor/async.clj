@@ -1,21 +1,30 @@
 (ns capacitor.async
-  (:require [org.httpkit.client :as http-client]
-            [cheshire.core      :as json]
-            [clojure.core.async :as async])
-  (:use     [capacitor.core :exclude [create-db-req
-                                      create-db
-                                      post-points-req
-                                      post-points
-                                      get-query-req
-                                      get-query]])
+  (:require
+    [org.httpkit.client :as http-client]
+    [cheshire.core      :as json]
+    [clojure.core.async :refer [chan
+                                sliding-buffer
+                                go
+                                >!
+                                put!
+                                thread
+                                timeout
+                                alt!!
+                                <!]])
+  (:use [capacitor.core :exclude [create-db-req
+                                  create-db
+                                  post-points-req
+                                  post-points
+                                  get-query-req
+                                  get-query]])
   (import [java.net URLEncoder]))
 
 (defn make-chan
   "Make a sliding buffer channel for async input or output."
   ([]
-    (async/chan (async/sliding-buffer 100000)))
+    (chan (sliding-buffer 100000)))
   ([s]
-    (async/chan (async/sliding-buffer s))))
+    (chan (sliding-buffer s))))
 
 ;;
 ;; ## Basic async API
@@ -36,7 +45,7 @@
 (defn create-db
   "Create database defined in client. Returns HTTP response in `r-in` channel."
   [client r-in]
-  (async/go (async/>! r-in (create-db-req client))))
+  (go (>! r-in (create-db-req client))))
 
 ;;
 ;; ## Event buffering and queuing
@@ -47,8 +56,7 @@
   The `:time` attribute (in ms) is automatically added when the event is added."
   [e-in event]
   (let [ts (System/currentTimeMillis)]
-    (async/put! e-in
-      (merge { :time ts } event))))
+    (put! e-in (merge { :time ts } event))))
 
 (defn post-points-req
   [client points]
@@ -77,30 +85,26 @@
   `msecs` milliseconds. Responses are returned in `r-out` to be consumed by a
   monitoring loop."
   [e-in r-out client size msecs]
-  (let [cnt-size (dec size)]
-    (async/thread
-      (loop [points []
-             to     (async/timeout msecs)]
-        (async/alt!!
-          e-in ([e]
-            (if (nil? e)
-              (if-not (empty? points)
-                (async/go async/>! r-out
-                  (post-points client points)))
-              (if (>= (count points) cnt-size)
-                (do
-                  (async/go async/>! r-out
-                    (post-points client (conj points e)))
-                  (recur [] (async/timeout msecs)))
-                (recur (conj points e) to))))
-          to ([_]
-            (if (empty? points)
-              (recur points (async/timeout msecs))
+  (thread
+    (loop [points []
+           to     (timeout msecs)]
+      (alt!!
+        e-in ([e]
+          (if (nil? e)
+            (if-not (empty? points)
+              (go (>! r-out (post-points client points))))
+            (if (> size (count points))
+              (recur (conj points e) to)
               (do
-                (async/go async/>! r-out
-                  (post-points client points))
-                (recur [] (async/timeout msecs)))))))
-      (println "run! loop stopped"))))
+                (go (>! r-out (post-points client (conj points e))))
+                (recur [] (timeout msecs))))))
+        to ([_]
+          (if (empty? points)
+            (recur points (timeout msecs))
+            (do
+              (go (>! r-out (post-points client points)))
+              (recur [] (timeout msecs)))))))
+    (println "run! loop stopped")))
 
 ;;
 ;; ## Query time-series
@@ -110,26 +114,26 @@
   "Submit query. Returns raw HTTP response."
   [client query]
   (let [url   (str (gen-url client :get-query) (URLEncoder/encode query))
-        c-out (async/chan)]
+        c-out (chan)]
     (http-client/get url {
       :socket-timeout        10000  ;; in milliseconds
       :conn-timeout          10000  ;; in milliseconds
       :accept                :json
       :throw-entire-message? true }
-      (fn [r] 
-        (async/put! c-out r)))
+      (fn [r]
+        (put! c-out r)))
     c-out))
 
 (defn read-results
   [r-out]
-  (async/go
+  (go
     (loop []
-      (when-let [r (async/<! r-out)]
-        (println (read-result (async/<! r)))
+      (when-let [r (<! r-out)]
+        (println (read-result (<! r)))
         (recur)))))
 
 (defn get-query
   "Submit query. Returns results in `r-out` channel."
   [client query r-out]
   (let [r (get-query-req client query)]
-    (async/put! r-out r)))
+    (put! r-out r)))

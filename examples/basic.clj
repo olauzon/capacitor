@@ -33,7 +33,7 @@
   (str
     "SELECT COUNT(email) "
     "FROM logins "
-    "GROUP BY time(10m) "
+    "GROUP BY time(1s) "
     "WHERE email =~ /.*gmail\\.com/"))
 
 (def query-01

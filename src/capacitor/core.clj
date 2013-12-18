@@ -155,7 +155,7 @@
          i 0]
     (let [rec (nth res-seq i)
           series-name (first rec)
-          values (last rec)
+          values  (last rec)
           data    (flatten (into [] [values]))
           columns (distinct (flatten (map keys data)))
           points  (map (fn [d] (map #(d %) columns)) data)
