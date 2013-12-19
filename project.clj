@@ -6,7 +6,7 @@
     :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [
     [org.clojure/clojure    "1.5.1"]
-    [org.clojure/core.async "0.1.256.0-1bf8cf-alpha"]
+    [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
     [clj-http               "0.7.7"]
     [http-kit               "2.1.10"]
     [cheshire               "5.2.0"]]
