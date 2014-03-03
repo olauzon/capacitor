@@ -69,15 +69,36 @@
     (is (= "http://localhost:8086/db/my-db/series?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) :post-points)))))
 
-(deftest gen-url-05
+(deftest test-gen-url-05
+  (testing "post-points with time_precision"
+    (is
+      (= "http://localhost:8086/db/my-db/series?u=root&p=root&time_precision=u"
+         (gen-url (make-client {:db "my-db"}) { :action         :post-points
+                                                :time-precision "u" })))))
+
+(deftest test-gen-url-06
   (testing "get-query"
     (is (= "http://localhost:8086/db/my-db/series?u=root&p=root&q="
            (gen-url (make-client {:db "my-db"}) :get-query)))))
 
-(deftest gen-url-05
-  (testing "get-query"
-    (is (= "http://localhost:8086/db/my-db/series?u=root&p=root&q="
-           (gen-url (make-client {:db "my-db"}) :get-query)))))
+(deftest test-gen-url-07
+  (testing "get-query with time_precision"
+    (is (=
+      "http://localhost:8086/db/my-db/series?u=root&p=root&time_precision=u&q="
+      (gen-url (make-client {:db "my-db"}) { :action         :get-query
+                                             :time-precision "u" })))))
+
+(deftest test-gen-url-08
+  (testing "delete-db-user"
+    (is (= "http://localhost:8086/db/my-db/users/my-username?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) { :action   :delete-db-user
+                                                  :username "my-username" })))))
+
+(deftest test-gen-url-09
+  (testing "update-db-user"
+    (is (= "http://localhost:8086/db/my-db/users/my-username?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) { :action   :update-db-user
+                                                  :username "my-username" })))))
 
 (deftest test-format-results-00
   (testing "format-results"

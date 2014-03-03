@@ -1,16 +1,19 @@
 (ns capacitor.async
   (:require
+    [capacitor.accumulator :as acc]
     [org.httpkit.client :as http-client]
     [cheshire.core      :as json]
     [clojure.core.async :refer [chan
                                 sliding-buffer
                                 go
                                 >!
+                                >!!
                                 put!
                                 thread
                                 timeout
                                 alt!!
-                                <!]])
+                                <!
+                                <!!]])
   (:use [capacitor.core :exclude [create-db-req
                                   create-db
                                   post-points-req
@@ -73,38 +76,25 @@
   "Post points to database. Returns HTTP response.
   Points should be submitted as a vector of maps."
   [client values]
-  ;;(println "posting")
   (post-points-req client (make-payload values)))
 
 ;;
 ;; ### Main run loop
 ;;
 
-(defn run!
-  "Buffer events accumulating from `e-in` for a maximum batch of `size` or
-  `msecs` milliseconds. Responses are returned in `r-out` to be consumed by a
-  monitoring loop."
-  [e-in r-out client size msecs]
+(defn post-loop!
+  [r-out client]
   (thread
-    (loop [points []
-           to     (timeout msecs)]
-      (alt!!
-        e-in ([e]
-          (if (nil? e)
-            (if-not (empty? points)
-              (go (>! r-out (post-points client points))))
-            (if (> size (count points))
-              (recur (conj points e) to)
-              (do
-                (go (>! r-out (post-points client (conj points e))))
-                (recur [] (timeout msecs))))))
-        to ([_]
-          (if (empty? points)
-            (recur points (timeout msecs))
-            (do
-              (go (>! r-out (post-points client points)))
-              (recur [] (timeout msecs)))))))
-    (println "run! loop stopped")))
+    (loop []
+    (when-let [points (<!! r-out)]
+      (do 
+        (post-points client points)
+        (recur))))))
+
+(defn run!
+  [e-in r-out client size msecs]
+  (acc/run! e-in r-out size msecs)
+  (post-loop! r-out client))
 
 ;;
 ;; ## Query time-series

@@ -26,43 +26,43 @@
 ;; Enqueue events
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "paulgmail.com" })
+  :email  "paul@gmail.com" })
 
 (influx-async/enqueue events-in {
   :series "signups"
-  :email  "johngmail.com" })
+  :email  "john@gmail.com" })
 
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "ringogmail.com" })
+  :email  "ringo@gmail.com" })
 
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "georgegmail.com" })
+  :email  "george@gmail.com" })
 
 (influx-async/enqueue events-in {
   :series "signups"
-  :email  "sydhotmail.com" })
+  :email  "syd@hotmail.com" })
 
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "rogerhotmail.com" })
+  :email  "roger@hotmail.com" })
 
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "nickhotmail.com" })
+  :email  "nick@hotmail.com" })
 
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "rickhotmail.com" })
+  :email  "rick@hotmail.com" })
 
 (influx-async/enqueue events-in {
   :series "logins"
-  :email  "davidhotmail.com" })
+  :email  "david@hotmail.com" })
 
 (influx-async/enqueue events-in {
   :series "signups"
-  :email  "stingyahoo.com" })
+  :email  "sting@yahoo.com" })
 
 (dotimes [i 12]
   (influx-async/enqueue events-in {

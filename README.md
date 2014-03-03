@@ -4,8 +4,8 @@ Capacitor  [![Build Status](https://travis-ci.org/olauzon/capacitor.png?branch=m
 A Clojure client for [InfluxDB](http://influxdb.org), a scalable open-source
 time-series events and metrics database.
 
-Follow the installation instructions on https://github.com/influxdb/influxdb to
-build the latest development version of InfluxDB.
+Follow the [download instructions on influxdb.org]
+(http://influxdb.org/download/) to install the latest version of InfluxDB.
 
 
 Installation
@@ -17,7 +17,7 @@ Capacitor is distributed via [Clojars](https://clojars.org/capacitor). Add the
 following to your dependencies in `project.clj`:
 
 ```clj
-:dependencies [[capacitor "0.1.4-SNAPSHOT"]]
+:dependencies [[capacitor "0.2.0-SNAPSHOT"]]
 ```
 
 
@@ -142,7 +142,9 @@ Returns:
  {:name "logins", :count 7, :sequence_number 1, :time 1384661760000}]
 ```
 
-See [examples/basic.clj](https://github.com/olauzon/capacitor/blob/master/examples/basic.clj) for these examples in one file.
+See [examples/basic.clj]
+(https://github.com/olauzon/capacitor/blob/master/examples/basic.clj)
+for these examples in one file.
 
 
 Async API
@@ -261,7 +263,9 @@ With a batch size of max 10 events and max 5 seconds
 ```
 
 
-See [examples/async.clj](https://github.com/olauzon/capacitor/blob/master/examples/async.clj) for these examples in one file.
+See [examples/async.clj]
+(https://github.com/olauzon/capacitor/blob/master/examples/async.clj)
+for these examples in one file.
 
 
 API Docs

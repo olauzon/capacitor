@@ -9,12 +9,12 @@
 
 (def default-client
   "Default HTTP client configuration"
-   {  :host     "localhost"
-      :scheme   "http"
-      :port     8086
-      :username "root"
-      :password "root"
-      :db       "default-db" })
+   { :host     "localhost"
+     :scheme   "http"
+     :port     8086
+     :username "root"
+     :password "root"
+     :db       "default-db" })
 
 (defn make-client
   "Returns a map representing an HTTP client configuration.
@@ -44,24 +44,48 @@
     (client :port)
     "/db"
     (cond
-      (= action :delete-db)      (str "/" (client :db))
-      (= action :get-dbs)        "s"
-      (= action :create-db-user) (str "/" (client :db) "/users")
-      (or (= action :post-points) (= action :get-query))
+      (= (action :action) :delete-db) (str "/" (client :db))
+      (= (action :action) :get-dbs)   "s"
+      (contains? #{ :create-db-user
+                    :get-db-user-users
+                    :update-db-user
+                    :delete-db-user } (action :action))
+        (str "/" (client :db) "/users")
+      (or (= (action :action) :post-points) (= (action :action) :get-query))
           (str "/" (client :db) "/series"))
+    (cond
+      (contains? #{ :update-db-user
+                    :delete-db-user } (action :action))
+        (str "/" (action :username)))
     "?u="
     (client :username)
     "&p="
     (client :password)
+    (when (action :time-precision)
+      (str "&time_precision=" (action :time-precision)))
     (cond
-      (= action :get-query) "&q=")))
+      (= (action :action) :get-query) "&q=")))
+
+(defmulti gen-url-multi
+  (fn [_ action] (class action)))
+
+(defmethod gen-url-multi clojure.lang.Keyword
+  [client action]
+  (gen-url-fn client { :action action }))
+
+(defmethod gen-url-multi clojure.lang.PersistentArrayMap
+  [client action]
+  (gen-url-fn client action))
 
 (def gen-url
-  (memoize gen-url-fn))
+  (memoize gen-url-multi))
 
 ;;
 ;; ## Database management
 ;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+;; ### Create a database
 
 (defn create-db-req
   "Create database defined in client. Returns raw HTTP response."
@@ -80,19 +104,8 @@
   [client]
   ((create-db-req client) :status))
 
-(defn delete-db-req
-  "Delete database defined in client. Returns raw HTTP response."
-  [client]
-  (let [url (gen-url client :delete-db)]
-    (http-client/delete url {
-      :socket-timeout        10000 ;; in milliseconds
-      :conn-timeout          10000 ;; in milliseconds
-      :throw-entire-message? true })))
-
-(defn delete-db
-  "Delete database defined in client. Returns HTTP status on success."
-  [client]
-  ((delete-db-req client) :status))
+;;;;;;;;;;;;;;;;;;;;;
+;; ### List databases
 
 (defn get-dbs-req
   "List databases. Returns raw HTTP response."
@@ -109,9 +122,33 @@
   [client]
   (json/parse-string ((get-dbs-req client) :body)))
 
+;;;;;;;;;;;;;;;;;;;;;;
+;; ### Drop a database
+
+(defn delete-db-req
+  "Delete database defined in client. Returns raw HTTP response."
+  [client]
+  (let [url (gen-url client :delete-db)]
+    (http-client/delete url {
+      :socket-timeout        10000 ;; in milliseconds
+      :conn-timeout          10000 ;; in milliseconds
+      :throw-entire-message? true })))
+
+(defn delete-db
+  "Delete database defined in client. Returns HTTP status on success."
+  [client]
+  ((delete-db-req client) :status))
+
 ;;
 ;; ## User management
 ;;
+
+;; ### Cluster admins
+
+
+;; ### Database users
+
+;; #### Create database user
 
 (defn create-db-user-req
   "Create new database user. Returns full HTTP response."
@@ -132,20 +169,78 @@
   [client username password]
   ((create-db-user-req client username password) :status))
 
-;;
-;; ## Post time-series points
-;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### List database users
 
-(defn post-points-req
-  [client points]
-  (let [url  (gen-url client :post-points)
-        body (json/generate-string points)]
+(defn get-db-users-req
+  [client]
+  (let [url  (gen-url client :get-db-user-users)]
+    (http-client/get url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn get-db-users
+  "List database users"
+  [client]
+  (json/parse-string ((get-db-users-req client) :body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Update database user
+
+(defn update-db-user-req
+  [client username options]
+  (let [url  (gen-url client { :action :update-db-user
+                               :username username })
+        attrs (merge {:name username} options)
+        body  (json/generate-string attrs)]
     (http-client/post url {
       :body                  body
       :socket-timeout        1000 ;; in milliseconds
       :conn-timeout          1000 ;; in milliseconds
       :content-type          :json
       :throw-entire-message? true })))
+
+(defn update-db-user
+  [client username options]
+  ((update-db-user-req client username options) :status))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Delete database user
+
+(defn delete-db-user-req
+  "Delete database defined in client. Returns raw HTTP response."
+  [client username]
+  (let [url (gen-url client { :action  :delete-db-user
+                              :username username })]
+    (http-client/delete url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :throw-entire-message? true })))
+
+(defn delete-db-user
+  "Delete database defined in client. Returns HTTP status on success."
+  [client username]
+  ((delete-db-user-req client username) :status))
+
+;;
+;; ## Post time-series points
+;;
+
+(defn post-points-req
+  ([client points]
+    (post-points-req client points nil))
+  ([client points time-precision]
+    (let [url  (gen-url client { :action         :post-points
+                                 :time-precision time-precision })
+          body (json/generate-string points)]
+      (http-client/post url {
+        :body                  body
+        :socket-timeout        1000 ;; in milliseconds
+        :conn-timeout          1000 ;; in milliseconds
+        :content-type          :json
+        :throw-entire-message? true }))))
 
 (defn format-payload
   [res]
@@ -188,8 +283,12 @@
 (defn post-points
   "Post points to database. Returns HTTP status on success.
   Points should be submitted as a vector of maps."
-  [client series-name values]
-  ((post-points-req client (make-payload series-name values)) :status))
+  ([client series-name values]
+    ((post-points-req client (make-payload series-name values)) :status))
+  ([client series-name time-precision values]
+    ((post-points-req client
+                      (make-payload series-name values)
+                      time-precision) :status)))
 
 ;;
 ;; ## Query time-series
@@ -198,13 +297,17 @@
 
 (defn get-query-req
   "Submit query. Returns raw HTTP response."
-  [client query]
-  (let [url (str (gen-url client :get-query) (URLEncoder/encode query))]
-    (http-client/get url {
-      :socket-timeout        10000  ;; in milliseconds
-      :conn-timeout          10000  ;; in milliseconds
-      :accept                :json
-      :throw-entire-message? true })))
+  ([client query]
+   (get-query-req client nil query))
+  ([client time-precision query]
+    (let [url (str (gen-url client { :action :get-query
+                                     :time-precision time-precision })
+                                   (URLEncoder/encode query))]
+      (http-client/get url {
+        :socket-timeout        10000  ;; in milliseconds
+        :conn-timeout          10000  ;; in milliseconds
+        :accept                :json
+        :throw-entire-message? true }))))
 
 (defn format-series-results
   {:no-doc true}
@@ -227,5 +330,7 @@
 
 (defn get-query
   "Submit query. Returns denormalized results set from string query."
-  [client query]
-  (read-result (get-query-req client query)))
+  ([client query]
+    (read-result (get-query-req client query)))
+  ([client time-precision query]
+    (read-result (get-query-req client time-precision query))))
