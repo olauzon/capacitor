@@ -42,6 +42,21 @@
     (client :host)
     ":"
     (client :port)
+    (if (contains? #{ :create-admin-user
+                      :delete-admin-user
+                      :update-admin-user
+                      :get-admin-users } (action :action))
+          (str 
+          "/cluster_admins"
+          (cond
+            (contains? #{ :update-admin-user
+                          :delete-admin-user } (action :action))
+              (str "/" (action :username)))
+          "?u="
+          (client :username)
+          "&p="
+          (client :password))
+    (str 
     "/db"
     (cond
       (= (action :action) :delete-db) (str "/" (client :db))
@@ -64,7 +79,7 @@
     (when (action :time-precision)
       (str "&time_precision=" (action :time-precision)))
     (cond
-      (= (action :action) :get-query) "&q=")))
+      (= (action :action) :get-query) "&q=")))))
 
 (defmulti gen-url-multi
   (fn [_ action] (class action)))
@@ -144,6 +159,82 @@
 ;;
 
 ;; ### Cluster admins
+
+;; #### Create admin user
+
+(defn create-admin-user-req
+  "Create new admin user. Returns full HTTP response."
+  [client username password]
+  (let [url  (gen-url client :create-admin-user)
+        body (json/generate-string {
+               :name     username
+               :password password })]
+    (http-client/post url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn create-admin-user
+  "Create new admin user. Returns HTTP status on success."
+  [client username password]
+  ((create-admin-user-req client username password) :status))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### List admin users
+
+(defn get-admin-users-req
+  [client]
+  (let [url  (gen-url client :get-admin-users)]
+    (http-client/get url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message  true })))
+
+(defn get-admin-users
+  "List admin users"
+  [client]
+  (json/parse-string ((get-admin-users-req client) :body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Update admin user
+
+(defn update-admin-user-req
+  [client username options]
+  (let [url  (gen-url client { :action :update-admin-user
+                               :username username })
+        attrs (merge {:name username} options)
+        body  (json/generate-string attrs)]
+    (http-client/post url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn update-admin-user
+  [client username options]
+  ((update-admin-user-req client username options) :status))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Delete admin user
+
+(defn delete-admin-user-req
+  "Delete an admin user. Returns raw HTTP response."
+  [client username]
+  (let [url (gen-url client { :action :delete-admin-user
+                              :username username })]
+    (http-client/delete url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :throw-entire-message? true })))
+
+(defn delete-admin-user
+  "Delete an admin user. Returns HTTP status on success."
+  [client username]
+  ((delete-admin-user-req client username) :status))
 
 
 ;; ### Database users
