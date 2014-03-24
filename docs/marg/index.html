@@ -3028,24 +3028,66 @@ net.brehaut.ClojureTools = (function (SH) {
     build_tree: build_tree
   };
 })(SyntaxHighlighter);
-</script><title>capacitor -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">capacitor</h1><h2 class="project-version">0.1.3</h2><br /><p>A Clojure client for InfluxDB</p>
-</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.5.1</td></tr><tr><td class="dep-name">org.clojure/core.async</td><td class="dotted"><hr /></td><td class="dep-version">0.1.256.0-1bf8cf-alpha</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.7.7</td></tr><tr><td class="dep-name">http-kit</td><td class="dotted"><hr /></td><td class="dep-version">2.1.10</td></tr><tr><td class="dep-name">cheshire</td><td class="dotted"><hr /></td><td class="dep-version">5.2.0</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">codox</td><td class="dotted"><hr /></td><td class="dep-version">0.6.6</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#capacitor.async">capacitor.async</a></li><li><a href="#capacitor.core">capacitor.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#capacitor.async" name="capacitor.async"><h1 class="project-name">capacitor.async</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</script><title>capacitor -- Marginalia</title></head><body><table><tr><td class="docs"><div class="header"><h1 class="project-name">capacitor</h1><h2 class="project-version">0.2.0</h2><br /><p>A Clojure client for InfluxDB</p>
+</div><div class="dependencies"><h3>dependencies</h3><table><tr><td class="dep-name">org.clojure/clojure</td><td class="dotted"><hr /></td><td class="dep-version">1.5.1</td></tr><tr><td class="dep-name">org.clojure/core.async</td><td class="dotted"><hr /></td><td class="dep-version">0.1.278.0-76b25b-alpha</td></tr><tr><td class="dep-name">clj-http</td><td class="dotted"><hr /></td><td class="dep-version">0.7.7</td></tr><tr><td class="dep-name">http-kit</td><td class="dotted"><hr /></td><td class="dep-version">2.1.10</td></tr><tr><td class="dep-name">cheshire</td><td class="dotted"><hr /></td><td class="dep-version">5.3.1</td></tr></table></div><div class="dependencies"><h3>dev dependencies</h3><table><tr><td class="dep-name">codox</td><td class="dotted"><hr /></td><td class="dep-version">0.6.6</td></tr></table></div></td><td class="codes" style="text-align: center; vertical-align: middle;color: #666;padding-right:20px"><br /><br /><br />(this space intentionally left almost blank)</td></tr><tr><td class="docs"><div class="toc"><a name="toc"><h3>namespaces</h3></a><ul><li><a href="#capacitor.accumulator">capacitor.accumulator</a></li><li><a href="#capacitor.async">capacitor.async</a></li><li><a href="#capacitor.core">capacitor.core</a></li></ul></div></td><td class="codes">&nbsp;</td></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#capacitor.accumulator" name="capacitor.accumulator"><h1 class="project-name">capacitor.accumulator</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(ns capacitor.accumulator
+  (:require [clojure.core.async :refer [&gt;!! go thread timeout alt!!]]))</pre></td></tr><tr><td class="docs"><h3>Accumulator</h3>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn run!
+  [e-in b-out size msecs]
+  &quot;Buffer events accumulating from `e-in` for a maximum batch of `size` or
+  `msecs` milliseconds. Responses are returned in `r-out` to be consumed by a
+  monitoring loop.&quot;
+  (thread
+    (loop [batch []
+           to    (timeout msecs)]
+      (alt!!
+        e-in ([e]
+          (if (nil? e)
+            (when-not (empty? batch) (&gt;!! b-out batch))
+            (if (&gt; size (count batch))
+              (recur (conj batch e) to)
+              (do
+                ;;(println &quot;size reached&quot;)
+                (&gt;!! b-out (conj batch e))
+                (recur [] (timeout msecs))))))
+        to ([_]
+          (do
+            ;;(println &quot;timeout reached&quot;)
+            (if (empty? batch)
+              (recur batch (timeout msecs))
+              (do
+                (&gt;!! b-out batch)
+                (recur [] (timeout msecs))))))))
+    (println &quot;acc! loop stopped&quot;)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#capacitor.async" name="capacitor.async"><h1 class="project-name">capacitor.async</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns capacitor.async
-  (:require [org.httpkit.client :as http-client]
-            [cheshire.core      :as json]
-            [clojure.core.async :as async])
-  (:use     [capacitor.core :exclude [create-db-req
-                                      create-db
-                                      post-points-req
-                                      post-points
-                                      get-query-req
-                                      get-query]])
+  (:require
+    [capacitor.accumulator :as acc]
+    [org.httpkit.client :as http-client]
+    [cheshire.core      :as json]
+    [clojure.core.async :refer [chan
+                                sliding-buffer
+                                go
+                                &gt;!
+                                &gt;!!
+                                put!
+                                thread
+                                timeout
+                                alt!!
+                                &lt;!
+                                &lt;!!]])
+  (:use [capacitor.core :exclude [create-db-req
+                                  create-db
+                                  post-points-req
+                                  post-points
+                                  get-query-req
+                                  get-query]])
   (import [java.net URLEncoder]))</pre></td></tr><tr><td class="docs"><p>Make a sliding buffer channel for async input or output.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn make-chan
   ([]
-    (async/chan (async/sliding-buffer 100000)))
+    (chan (sliding-buffer 100000)))
   ([s]
-    (async/chan (async/sliding-buffer s))))</pre></td></tr><tr><td class="docs"><h2>Basic async API</h2>
+    (chan (sliding-buffer s))))</pre></td></tr><tr><td class="docs"><h2>Basic async API</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Create database defined in client. Returns raw HTTP response.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create-db-req
   [client]
@@ -3059,14 +3101,13 @@ net.brehaut.ClojureTools = (function (SH) {
       :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Create database defined in client. Returns HTTP response in <code>r-in</code> channel.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create-db
   [client r-in]
-  (async/go (async/&gt;! r-in (create-db-req client))))</pre></td></tr><tr><td class="docs"><h2>Event buffering and queuing</h2>
+  (go (&gt;! r-in (create-db-req client))))</pre></td></tr><tr><td class="docs"><h2>Event buffering and queuing</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Append event to <code>e-in</code> channel.
   The <code>:time</code> attribute (in ms) is automatically added when the event is added.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn enqueue
   [e-in event]
   (let [ts (System/currentTimeMillis)]
-    (async/put! e-in
-      (merge { :time ts } event))))</pre></td></tr><tr><td class="docs">
+    (put! e-in (merge { :time ts } event))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn post-points-req
   [client points]
   (let [url  (gen-url client :post-points)
@@ -3080,73 +3121,56 @@ net.brehaut.ClojureTools = (function (SH) {
   Points should be submitted as a vector of maps.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn post-points
   [client values]
-  ;;(println &quot;posting&quot;)
   (post-points-req client (make-payload values)))</pre></td></tr><tr><td class="docs"><h3>Main run loop</h3>
-</td><td class="codes"></td></tr><tr><td class="docs"><p>Buffer events accumulating from <code>e-in</code> for a maximum batch of <code>size</code> or
-  <code>msecs</code> milliseconds. Responses are returned in <code>r-out</code> to be consumed by a
-  monitoring loop.</p>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn post-loop!
+  [r-out client]
+  (thread
+    (loop []
+    (when-let [points (&lt;!! r-out)]
+      (do 
+        (post-points client points)
+        (recur))))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn run!
   [e-in r-out client size msecs]
-  (let [cnt-size (dec size)]
-    (async/thread
-      (loop [points []
-             to     (async/timeout msecs)]
-        (async/alt!!
-          e-in ([e]
-            (if (nil? e)
-              (if-not (empty? points)
-                (async/go async/&gt;! r-out
-                  (post-points client points)))
-              (if (&gt;= (count points) cnt-size)
-                (do
-                  (async/go async/&gt;! r-out
-                    (post-points client (conj points e)))
-                  (recur [] (async/timeout msecs)))
-                (recur (conj points e) to))))
-          to ([_]
-            (if (empty? points)
-              (recur points (async/timeout msecs))
-              (do
-                (async/go async/&gt;! r-out
-                  (post-points client points))
-                (recur [] (async/timeout msecs)))))))
-      (println &quot;run! loop stopped&quot;))))</pre></td></tr><tr><td class="docs"><h2>Query time-series</h2>
+  (acc/run! e-in r-out size msecs)
+  (post-loop! r-out client))</pre></td></tr><tr><td class="docs"><h2>Query time-series</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Submit query. Returns raw HTTP response.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-query-req
   [client query]
   (let [url   (str (gen-url client :get-query) (URLEncoder/encode query))
-        c-out (async/chan)]
+        c-out (chan)]
     (http-client/get url {
-      :socket-timeout        10000  ;; in milliseconds
-      :conn-timeout          10000  ;; in milliseconds
+      :socket-timeout        60000  ;; in milliseconds
+      :conn-timeout          60000  ;; in milliseconds
       :accept                :json
       :throw-entire-message? true }
-      (fn [r] 
-        (async/put! c-out r)))
+      (fn [r]
+        (put! c-out r)))
     c-out))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn read-results
   [r-out]
-  (async/go
+  (go
     (loop []
-      (when-let [r (async/&lt;! r-out)]
-        (println (read-result (async/&lt;! r)))
+      (when-let [r (&lt;! r-out)]
+        (println (read-result (&lt;! r)))
         (recur)))))</pre></td></tr><tr><td class="docs"><p>Submit query. Returns results in <code>r-out</code> channel.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-query
   [client query r-out]
   (let [r (get-query-req client query)]
-    (async/put! r-out r)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#capacitor.core" name="capacitor.core"><h1 class="project-name">capacitor.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
+    (put! r-out r)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr><tr><td class="docs"><div class="docs-header"><a class="anchor" href="#capacitor.core" name="capacitor.core"><h1 class="project-name">capacitor.core</h1><a class="toc-link" href="#toc">toc</a></a></div></td><td class="codes" /></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(ns capacitor.core
   (:require [clj-http.client :as http-client]
             [cheshire.core   :as json])
   (import [java.net URLEncoder]))</pre></td></tr><tr><td class="docs"><h2>Client options</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Default HTTP client configuration</p>
 </td><td class="codes"><pre class="brush: clojure">(def default-client
-   {  :host     &quot;localhost&quot;
-      :scheme   &quot;http&quot;
-      :port     8086
-      :username &quot;root&quot;
-      :password &quot;root&quot;
-      :db       &quot;default-db&quot; })</pre></td></tr><tr><td class="docs"><p>Returns a map representing an HTTP client configuration.</p>
+   { :host     &quot;localhost&quot;
+     :scheme   &quot;http&quot;
+     :port     8086
+     :username &quot;root&quot;
+     :password &quot;root&quot;
+     :db       &quot;default-db&quot; })</pre></td></tr><tr><td class="docs"><p>Returns a map representing an HTTP client configuration.</p>
 
 <pre><code>Valid options:
   :host      (default: "localhost")
@@ -3169,21 +3193,55 @@ net.brehaut.ClojureTools = (function (SH) {
     (client :host)
     &quot;:&quot;
     (client :port)
+    (if (contains? #{ :create-admin-user
+                      :delete-admin-user
+                      :update-admin-user
+                      :get-admin-users } (action :action))
+          (str 
+          &quot;/cluster_admins&quot;
+          (cond
+            (contains? #{ :update-admin-user
+                          :delete-admin-user } (action :action))
+              (str &quot;/&quot; (action :username)))
+          &quot;?u=&quot;
+          (client :username)
+          &quot;&amp;p=&quot;
+          (client :password))
+    (str 
     &quot;/db&quot;
     (cond
-      (= action :delete-db)      (str &quot;/&quot; (client :db))
-      (= action :get-dbs)        &quot;s&quot;
-      (= action :create-db-user) (str &quot;/&quot; (client :db) &quot;/users&quot;)
-      (or (= action :post-points) (= action :get-query))
+      (= (action :action) :delete-db) (str &quot;/&quot; (client :db))
+      (= (action :action) :get-dbs)   &quot;s&quot;
+      (contains? #{ :create-db-user
+                    :get-db-user-users
+                    :update-db-user
+                    :delete-db-user } (action :action))
+        (str &quot;/&quot; (client :db) &quot;/users&quot;)
+      (or (= (action :action) :post-points) (= (action :action) :get-query))
           (str &quot;/&quot; (client :db) &quot;/series&quot;))
+    (cond
+      (contains? #{ :update-db-user
+                    :delete-db-user } (action :action))
+        (str &quot;/&quot; (action :username)))
     &quot;?u=&quot;
     (client :username)
     &quot;&amp;p=&quot;
     (client :password)
+    (when (action :time-precision)
+      (str &quot;&amp;time_precision=&quot; (action :time-precision)))
     (cond
-      (= action :get-query) &quot;&amp;q=&quot;)))</pre></td></tr><tr><td class="docs">
+      (= (action :action) :get-query) &quot;&amp;q=&quot;)))))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmulti gen-url-multi
+  (fn [_ action] (class action)))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod gen-url-multi clojure.lang.Keyword
+  [client action]
+  (gen-url-fn client { :action action }))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defmethod gen-url-multi clojure.lang.PersistentArrayMap
+  [client action]
+  (gen-url-fn client action))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(def gen-url
-  (memoize gen-url-fn))</pre></td></tr><tr><td class="docs"><h2>Database management</h2>
+  (memoize gen-url-multi))</pre></td></tr><tr><td class="docs"><h2>Database management</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><h3>Create a database</h3>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Create database defined in client. Returns raw HTTP response.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create-db-req
   [client]
@@ -3197,17 +3255,8 @@ net.brehaut.ClojureTools = (function (SH) {
       :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Create database defined in client. Returns HTTP status on success.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create-db
   [client]
-  ((create-db-req client) :status))</pre></td></tr><tr><td class="docs"><p>Delete database defined in client. Returns raw HTTP response.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn delete-db-req
-  [client]
-  (let [url (gen-url client :delete-db)]
-    (http-client/delete url {
-      :socket-timeout        10000 ;; in milliseconds
-      :conn-timeout          10000 ;; in milliseconds
-      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Delete database defined in client. Returns HTTP status on success.</p>
-</td><td class="codes"><pre class="brush: clojure">(defn delete-db
-  [client]
-  ((delete-db-req client) :status))</pre></td></tr><tr><td class="docs"><p>List databases. Returns raw HTTP response.</p>
+  ((create-db-req client) :status))</pre></td></tr><tr><td class="docs"><h3>List databases</h3>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>List databases. Returns raw HTTP response.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-dbs-req
   [client]
   (let [url (gen-url client :get-dbs)]
@@ -3218,7 +3267,77 @@ net.brehaut.ClojureTools = (function (SH) {
       :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Returns vector of database names.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-dbs
   [client]
-  (json/parse-string ((get-dbs-req client) :body)))</pre></td></tr><tr><td class="docs"><h2>User management</h2>
+  (json/parse-string ((get-dbs-req client) :body)))</pre></td></tr><tr><td class="docs"><h3>Drop a database</h3>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Delete database defined in client. Returns raw HTTP response.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-db-req
+  [client]
+  (let [url (gen-url client :delete-db)]
+    (http-client/delete url {
+      :socket-timeout        10000 ;; in milliseconds
+      :conn-timeout          10000 ;; in milliseconds
+      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Delete database defined in client. Returns HTTP status on success.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-db
+  [client]
+  ((delete-db-req client) :status))</pre></td></tr><tr><td class="docs"><h2>User management</h2>
+</td><td class="codes"></td></tr><tr><td class="docs"><h3>Cluster admins</h3>
+</td><td class="codes"></td></tr><tr><td class="docs"><h4>Create admin user</h4>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Create new admin user. Returns full HTTP response.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn create-admin-user-req
+  [client username password]
+  (let [url  (gen-url client :create-admin-user)
+        body (json/generate-string {
+               :name     username
+               :password password })]
+    (http-client/post url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Create new admin user. Returns HTTP status on success.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn create-admin-user
+  [client username password]
+  ((create-admin-user-req client username password) :status))</pre></td></tr><tr><td class="docs"><h4>List admin users</h4>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn get-admin-users-req
+  [client]
+  (let [url  (gen-url client :get-admin-users)]
+    (http-client/get url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message  true })))</pre></td></tr><tr><td class="docs"><p>List admin users</p>
+</td><td class="codes"><pre class="brush: clojure">(defn get-admin-users
+  [client]
+  (json/parse-string ((get-admin-users-req client) :body)))</pre></td></tr><tr><td class="docs"><h4>Update admin user</h4>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn update-admin-user-req
+  [client username options]
+  (let [url  (gen-url client { :action :update-admin-user
+                               :username username })
+        attrs (merge {:name username} options)
+        body  (json/generate-string attrs)]
+    (http-client/post url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn update-admin-user
+  [client username options]
+  ((update-admin-user-req client username options) :status))</pre></td></tr><tr><td class="docs"><h4>Delete admin user</h4>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Delete an admin user. Returns raw HTTP response.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-admin-user-req
+  [client username]
+  (let [url (gen-url client { :action :delete-admin-user
+                              :username username })]
+    (http-client/delete url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Delete an admin user. Returns HTTP status on success.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-admin-user
+  [client username]
+  ((delete-admin-user-req client username) :status))</pre></td></tr><tr><td class="docs"><h3>Database users</h3>
+</td><td class="codes"></td></tr><tr><td class="docs"><h4>Create database user</h4>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Create new database user. Returns full HTTP response.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create-db-user-req
   [client username password]
@@ -3234,18 +3353,61 @@ net.brehaut.ClojureTools = (function (SH) {
       :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Create new database user. Returns HTTP status on success.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn create-db-user
   [client username password]
-  ((create-db-user-req client username password) :status))</pre></td></tr><tr><td class="docs"><h2>Post time-series points</h2>
+  ((create-db-user-req client username password) :status))</pre></td></tr><tr><td class="docs"><h4>List database users</h4>
 </td><td class="codes"></td></tr><tr><td class="docs">
-</td><td class="codes"><pre class="brush: clojure">(defn post-points-req
-  [client points]
-  (let [url  (gen-url client :post-points)
-        body (json/generate-string points)]
+</td><td class="codes"><pre class="brush: clojure">(defn get-db-users-req
+  [client]
+  (let [url  (gen-url client :get-db-user-users)]
+    (http-client/get url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>List database users</p>
+</td><td class="codes"><pre class="brush: clojure">(defn get-db-users
+  [client]
+  (json/parse-string ((get-db-users-req client) :body)))</pre></td></tr><tr><td class="docs"><h4>Update database user</h4>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn update-db-user-req
+  [client username options]
+  (let [url  (gen-url client { :action :update-db-user
+                               :username username })
+        attrs (merge {:name username} options)
+        body  (json/generate-string attrs)]
     (http-client/post url {
       :body                  body
       :socket-timeout        1000 ;; in milliseconds
       :conn-timeout          1000 ;; in milliseconds
       :content-type          :json
       :throw-entire-message? true })))</pre></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn update-db-user
+  [client username options]
+  ((update-db-user-req client username options) :status))</pre></td></tr><tr><td class="docs"><h4>Delete database user</h4>
+</td><td class="codes"></td></tr><tr><td class="docs"><p>Delete database defined in client. Returns raw HTTP response.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-db-user-req
+  [client username]
+  (let [url (gen-url client { :action  :delete-db-user
+                              :username username })]
+    (http-client/delete url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs"><p>Delete database defined in client. Returns HTTP status on success.</p>
+</td><td class="codes"><pre class="brush: clojure">(defn delete-db-user
+  [client username]
+  ((delete-db-user-req client username) :status))</pre></td></tr><tr><td class="docs"><h2>Post time-series points</h2>
+</td><td class="codes"></td></tr><tr><td class="docs">
+</td><td class="codes"><pre class="brush: clojure">(defn post-points-req
+  ([client points]
+    (post-points-req client points nil))
+  ([client points time-precision]
+    (let [url  (gen-url client { :action         :post-points
+                                 :time-precision time-precision })
+          body (json/generate-string points)]
+      (http-client/post url {
+        :body                  body
+        :socket-timeout        1000 ;; in milliseconds
+        :conn-timeout          1000 ;; in milliseconds
+        :content-type          :json
+        :throw-entire-message? true }))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn format-payload
   [res]
   (let [res-seq (seq res)
@@ -3254,7 +3416,7 @@ net.brehaut.ClojureTools = (function (SH) {
          i 0]
     (let [rec (nth res-seq i)
           series-name (first rec)
-          values (last rec)
+          values  (last rec)
           data    (flatten (into [] [values]))
           columns (distinct (flatten (map keys data)))
           points  (map (fn [d] (map #(d %) columns)) data)
@@ -3283,17 +3445,25 @@ net.brehaut.ClojureTools = (function (SH) {
     (make-payload (map #(assoc % :series series-name) values))))</pre></td></tr><tr><td class="docs"><p>Post points to database. Returns HTTP status on success.
   Points should be submitted as a vector of maps.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn post-points
-  [client series-name values]
-  ((post-points-req client (make-payload series-name values)) :status))</pre></td></tr><tr><td class="docs"><h2>Query time-series</h2>
+  ([client series-name values]
+    ((post-points-req client (make-payload series-name values)) :status))
+  ([client series-name time-precision values]
+    ((post-points-req client
+                      (make-payload series-name values)
+                      time-precision) :status)))</pre></td></tr><tr><td class="docs"><h2>Query time-series</h2>
 </td><td class="codes"></td></tr><tr><td class="docs"><p>Submit query. Returns raw HTTP response.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-query-req
-  [client query]
-  (let [url (str (gen-url client :get-query) (URLEncoder/encode query))]
-    (http-client/get url {
-      :socket-timeout        10000  ;; in milliseconds
-      :conn-timeout          10000  ;; in milliseconds
-      :accept                :json
-      :throw-entire-message? true })))</pre></td></tr><tr><td class="docs">
+  ([client query]
+   (get-query-req client nil query))
+  ([client time-precision query]
+    (let [url (str (gen-url client { :action :get-query
+                                     :time-precision time-precision })
+                                   (URLEncoder/encode query))]
+      (http-client/get url {
+        :socket-timeout        10000  ;; in milliseconds
+        :conn-timeout          10000  ;; in milliseconds
+        :accept                :json
+        :throw-entire-message? true }))))</pre></td></tr><tr><td class="docs">
 </td><td class="codes"><pre class="brush: clojure">(defn format-series-results
   {:no-doc true}
   [series-results]
@@ -3311,6 +3481,8 @@ net.brehaut.ClojureTools = (function (SH) {
   [r]
   (format-results (json/parse-string (r :body))))</pre></td></tr><tr><td class="docs"><p>Submit query. Returns denormalized results set from string query.</p>
 </td><td class="codes"><pre class="brush: clojure">(defn get-query
-  [client query]
-  (read-result (get-query-req client query)))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
+  ([client query]
+    (read-result (get-query-req client query)))
+  ([client time-precision query]
+    (read-result (get-query-req client time-precision query))))</pre></td></tr><tr><td class="spacer docs">&nbsp;</td><td class="codes" /></tr></table><div class="footer">Generated by <a href="https://github.com/fogus/marginalia">Marginalia</a>.&nbsp;&nbsp;Syntax highlighting provided by Alex Gorbatchev's <a href="http://alexgorbatchev.com/SyntaxHighlighter/">SyntaxHighlighter</a></div><script type="text/javascript">SyntaxHighlighter.defaults['gutter'] = false;
        SyntaxHighlighter.all()</script></body></html>
