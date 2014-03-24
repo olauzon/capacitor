@@ -17,7 +17,7 @@ Capacitor is distributed via [Clojars](https://clojars.org/capacitor). Add the
 following to your dependencies in `project.clj`:
 
 ```clj
-:dependencies [[capacitor "0.2.0-SNAPSHOT"]]
+:dependencies [[capacitor "0.2.0"]]
 ```
 
 
@@ -274,8 +274,14 @@ API Docs
 [API docs (codox)](http://olauzon.github.io/capacitor/docs/codox/index.html)
 [API docs (Marginalia)](http://olauzon.github.io/capacitor/docs/marg/index.html)
 
+
+### Contributors
+
+  - @olauzon
+  - @pradeepchhetri
+
 ## License
 
-Copyright © 2013 Olivier Lauzon
+Copyright © 2013–2014 Olivier Lauzon
 
 Distributed under the Eclipse Public License.
