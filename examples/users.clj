@@ -21,3 +21,11 @@
 (influx/create-db-user client "myuser2" "mypassword2")
 
 (influx/update-db-user client "myuser2" { :password "mypassword42" })
+
+(influx/create-admin-user client "newuser" "newpassword")
+
+(influx/update-admin-user client "newuser" {:password "password"})
+
+(influx/get-admin-users client)
+
+(influx/delete-admin-user client "newuser")

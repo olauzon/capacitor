@@ -65,39 +65,56 @@
            (gen-url (make-client {:db "my-db"}) :create-db-user)))))
 
 (deftest test-gen-url-04
+  (testing "create-admin-user"
+    (is (= "http://localhost:8086/cluster_admins?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) :create-admin-user)))))
+
+(deftest test-gen-url-05
   (testing "post-points"
     (is (= "http://localhost:8086/db/my-db/series?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) :post-points)))))
 
-(deftest test-gen-url-05
+(deftest test-gen-url-06
   (testing "post-points with time_precision"
     (is
       (= "http://localhost:8086/db/my-db/series?u=root&p=root&time_precision=u"
          (gen-url (make-client {:db "my-db"}) { :action         :post-points
                                                 :time-precision "u" })))))
 
-(deftest test-gen-url-06
+(deftest test-gen-url-07
   (testing "get-query"
     (is (= "http://localhost:8086/db/my-db/series?u=root&p=root&q="
            (gen-url (make-client {:db "my-db"}) :get-query)))))
 
-(deftest test-gen-url-07
+(deftest test-gen-url-08
   (testing "get-query with time_precision"
     (is (=
       "http://localhost:8086/db/my-db/series?u=root&p=root&time_precision=u&q="
       (gen-url (make-client {:db "my-db"}) { :action         :get-query
                                              :time-precision "u" })))))
 
-(deftest test-gen-url-08
+(deftest test-gen-url-09
   (testing "delete-db-user"
     (is (= "http://localhost:8086/db/my-db/users/my-username?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) { :action   :delete-db-user
                                                   :username "my-username" })))))
 
-(deftest test-gen-url-09
+(deftest test-gen-url-10
+  (testing "delete-admin-user"
+    (is (= "http://localhost:8086/cluster_admins/my-username?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) { :action   :delete-admin-user
+                                                  :username "my-username" })))))
+
+(deftest test-gen-url-11
   (testing "update-db-user"
     (is (= "http://localhost:8086/db/my-db/users/my-username?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) { :action   :update-db-user
+                                                  :username "my-username" })))))
+
+(deftest test-gen-url-12
+  (testing "update-admin-user"
+    (is (= "http://localhost:8086/cluster_admins/my-username?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) { :action   :update-admin-user
                                                   :username "my-username" })))))
 
 (deftest test-format-results-00
