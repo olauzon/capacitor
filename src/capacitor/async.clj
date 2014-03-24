@@ -106,8 +106,8 @@
   (let [url   (str (gen-url client :get-query) (URLEncoder/encode query))
         c-out (chan)]
     (http-client/get url {
-      :socket-timeout        10000  ;; in milliseconds
-      :conn-timeout          10000  ;; in milliseconds
+      :socket-timeout        60000  ;; in milliseconds
+      :conn-timeout          60000  ;; in milliseconds
       :accept                :json
       :throw-entire-message? true }
       (fn [r]
