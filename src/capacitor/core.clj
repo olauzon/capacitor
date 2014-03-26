@@ -391,8 +391,8 @@
   ([client query]
    (get-query-req client nil query))
   ([client time-precision query]
-    (let [url (str (gen-url client { :action :get-query
-                                     :time-precision time-precision })
+    (let [url (str (gen-url client {:action         :get-query
+                                    :time-precision time-precision})
                                    (URLEncoder/encode query))]
       (http-client/get url {
         :socket-timeout        10000  ;; in milliseconds

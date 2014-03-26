@@ -175,13 +175,13 @@ Capacitor has an asynchronous API for event batch accumulation and submission.
 ### Make a channel to buffer incoming events
 
 ```clj
-(def events-in (atom (influx-async/make-chan)))
+(def events-in (influx-async/make-chan))
 ```
 
 ### Make a channel to collect post responses
 
 ```clj
-(def resp-out (atom (influx-async/make-chan)))
+(def resp-out (influx-async/make-chan))
 ```
 
 ### Start the batch processing loop
@@ -189,54 +189,54 @@ Capacitor has an asynchronous API for event batch accumulation and submission.
 With a batch size of max 10 events and max 5 seconds
 
 ```clj
-(influx-async/run! @events-in @resp-out c 10 5000)
+(influx-async/run! events-in resp-out c 10 5000)
 ```
 
 ### Enqueue events
 
 ```clj
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "paul@gmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "signups"
   :email  "john@gmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "ringo@gmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "george@gmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "signups"
   :email  "syd@hotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "roger@hotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "nick@hotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "rick@hotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "logins"
   :email  "david@hotmail.com" })
 
-(influx-async/enqueue @events-in {
+(influx-async/enqueue events-in {
   :series "signups"
   :email  "sting@yahoo.com" })
 
 (dotimes [i 12]
-  (influx-async/enqueue @events-in {
+  (influx-async/enqueue events-in {
     :series "logins"
     :email  (str "i" i "@i.com") }))
 ```
@@ -259,7 +259,7 @@ With a batch size of max 10 events and max 5 seconds
 ;; Require core.async
 (require '[clojure.core.async :as async])
 
-(async/close! @events-in)
+(async/close! events-in)
 ```
 
 
@@ -272,13 +272,14 @@ API Docs
 --------
 
 [API docs (codox)](http://olauzon.github.io/capacitor/docs/codox/index.html)
+|
 [API docs (Marginalia)](http://olauzon.github.io/capacitor/docs/marg/index.html)
 
 
-### Contributors
+## Contributors
 
-  - @olauzon
-  - @pradeepchhetri
+  - [@olauzon](https://github.com/olauzon)
+  - [@pradeepchhetri](https://github.com/pradeepchhetri)
 
 ## License
 
