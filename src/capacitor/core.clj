@@ -59,6 +59,7 @@
     (str 
     "/db"
     (cond
+      (= (action :action) :delete-series) (str "/" (client :db) "/series/" (action :series))
       (= (action :action) :delete-db) (str "/" (client :db))
       (= (action :action) :get-dbs)   "s"
       (contains? #{ :create-db-user
@@ -153,6 +154,24 @@
   "Delete database defined in client. Returns HTTP status on success."
   [client]
   ((delete-db-req client) :status))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; ### Delete a series of a database
+
+(defn delete-series-req
+  "Delete a series of a database. Returns raw HTTP response."
+  [client series]
+  (let [url (str (gen-url client {:action :delete-series
+                                  :series series}))]
+    (http-client/delete url {
+      :socket-timeout        10000 ;; in milliseconds
+      :conn-timeout          10000 ;; in milliseconds
+      :throw-entire-message? true })))
+
+(defn delete-series
+  "Delete a series of a database. Returns HTTP status on success."
+  [client series]
+  ((delete-series-req client series) :status))
 
 ;;
 ;; ## User management

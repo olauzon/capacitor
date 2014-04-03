@@ -45,3 +45,5 @@
 (influx/get-query c query-00)
 
 (influx/get-query c query-01)
+
+(influx/delete-series c "logins")
