@@ -117,6 +117,12 @@
            (gen-url (make-client {:db "my-db"}) { :action   :update-admin-user
                                                   :username "my-username" })))))
 
+(deftest test-gen-url-13
+  (testing "delete-series"
+    (is (= "http://localhost:8086/db/my-db/series/my-series?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) { :action   :delete-series
+                                                  :series   "my-series" })))))
+
 (deftest test-format-results-00
   (testing "format-results"
     (is (= [
