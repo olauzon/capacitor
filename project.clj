@@ -1,4 +1,4 @@
-(defproject capacitor "0.2.2"
+(defproject capacitor "0.2.3"
   :description "A Clojure client for InfluxDB"
   :url         "https://github.com/olauzon/capacitor"
   :license {
@@ -6,7 +6,7 @@
     :url  "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [
     [org.clojure/clojure    "1.5.1"]
-    [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
+    [org.clojure/core.async "0.1.303.0-886421-alpha"]
     [clj-http               "0.9.1"]
     [http-kit               "2.1.18"]
     [cheshire               "5.3.1"]
