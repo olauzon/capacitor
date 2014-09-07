@@ -14,8 +14,7 @@
      :port        8086
      :username    "root"
      :password    "root"
-     :db          "default-db"
-     :shard-space "default"})
+     :db          "default-db"})
 
 (defn make-client
   "Returns a map representing an HTTP client configuration.
@@ -26,8 +25,7 @@
       :port         (default: 8086)
       :username     (default \"root\")
       :password     (default \"root\")
-      :db           (default: \"default-db\")
-      :shard-space  (default: \"default\")"
+      :db           (default: \"default-db\")"
   [opts]
   (merge default-client opts))
 

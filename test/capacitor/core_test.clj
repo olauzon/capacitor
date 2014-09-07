@@ -123,6 +123,28 @@
            (gen-url (make-client {:db "my-db"}) { :action   :delete-series
                                                   :series   "my-series" })))))
 
+(deftest test-gen-url-14
+  (testing "get-shards"
+    (is (= "http://localhost:8086/cluster/shards?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) :get-shards)))))
+
+(deftest test-gen-url-15
+  (testing "get-shard-spaces"
+    (is (= "http://localhost:8086/cluster/shard_spaces?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) :get-shard-spaces)))))
+
+(deftest test-client-16
+  (testing "drop-shard-space"
+    (is (= "http://localhost:8086/cluster/shard_spaces/my-db/default?u=root&p=root"
+           (gen-url (make-client {:db "my-db"
+                                  :shard-space "default"}) :drop-shard-space)))))
+
+(deftest test-client-17
+  (testing "drop-shard"
+    (is (= "http://localhost:8086/cluster/shards/1?u=root&p=root"
+           (gen-url (make-client {:db "my-db"
+                                  :shard-id 1}) :drop-shard)))))
+
 (deftest test-format-results-00
   (testing "format-results"
     (is (= [
