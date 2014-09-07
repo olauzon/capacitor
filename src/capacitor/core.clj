@@ -9,23 +9,23 @@
 
 (def default-client
   "Default HTTP client configuration"
-   { :host     "localhost"
-     :scheme   "http"
-     :port     8086
-     :username "root"
-     :password "root"
-     :db       "default-db" })
+   { :host        "localhost"
+     :scheme      "http"
+     :port        8086
+     :username    "root"
+     :password    "root"
+     :db          "default-db"})
 
 (defn make-client
   "Returns a map representing an HTTP client configuration.
 
     Valid options:
-      :host      (default: \"localhost\")
-      :scheme    (default: \"http://\")
-      :port      (default: 8086)
-      :username  (default \"root\")
-      :password  (default \"root\")
-      :db        (default: \"default-db\")"
+      :host         (default: \"localhost\")
+      :scheme       (default: \"http://\")
+      :port         (default: 8086)
+      :username     (default \"root\")
+      :password     (default \"root\")
+      :db           (default: \"default-db\")"
   [opts]
   (merge default-client opts))
 
@@ -42,11 +42,11 @@
     (client :host)
     ":"
     (client :port)
-    (if (contains? #{ :create-admin-user
-                      :delete-admin-user
-                      :update-admin-user
-                      :get-admin-users } (action :action))
-          (str 
+    (cond (contains? #{ :create-admin-user
+                        :delete-admin-user
+                        :update-admin-user
+                        :get-admin-users } (action :action))
+          (str
           "/cluster_admins"
           (cond
             (contains? #{ :update-admin-user
@@ -56,7 +56,25 @@
           (client :username)
           "&p="
           (client :password))
-    (str 
+          (contains? #{ :drop-shard
+                        :get-shards
+                        :get-shard-spaces
+                        :drop-shard-space
+                        :create-shard-space } (action :action))
+          (str
+           "/cluster"
+           (cond
+             (= (action :action) :get-shard-spaces) "/shard_spaces"
+             (= (action :action) :drop-shard-space) (str "/shard_spaces/" (client :db) "/" (client :shard-space))
+             (= (action :action) :create-shard-space) (str "/shard_spaces/" (client :db))
+             (= (action :action) :get-shards) "/shards"
+             (= (action :action) :drop-shard) (str "/shards/" (client :shard-id)))
+           "?u="
+           (client :username)
+           "&p="
+           (client :password))
+    :else
+    (str
     "/db"
     (cond
       (= (action :action) :delete-series) (str "/" (client :db) "/series/" (action :series))
@@ -333,6 +351,83 @@
   "Delete database defined in client. Returns HTTP status on success."
   [client username]
   ((delete-db-user-req client username) :status))
+
+;;
+;; ## Shards and Shards spaces (From v0.8.0 onwards)
+;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Get all shards
+
+(defn get-shards-req
+  [client]
+  (let [url  (gen-url client :get-shards)]
+    (http-client/get url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn get-shards
+  "List shards."
+  [client]
+  (json/parse-string ((get-shards-req client) :body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Get all shard spaces
+
+(defn get-shard-spaces-req
+  [client]
+  (let [url  (gen-url client :get-shard-spaces)]
+    (http-client/get url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn get-shard-spaces
+  "List shard spaces."
+  [client]
+  (json/parse-string ((get-shard-spaces-req client) :body)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Drop shard space
+
+(defn drop-shard-space-req
+  [client database shard-space]
+  (let [client (merge client { :shard-space shard-space
+                               :db          database })
+        url (gen-url client :drop-shard-space)]
+    (http-client/delete url {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :throw-entire-message? true })))
+
+(defn drop-shard-space
+  "Drop shard space."
+  [client database shard-space]
+  ((drop-shard-space-req client database shard-space) :status))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Drop shard
+
+(defn drop-shard-req
+  [client shard-id server-id]
+  (let [client (merge client { :shard-id shard-id })
+        url (gen-url client :drop-shard)
+        body (json/generate-string { :serverIds (vector server-id)})]
+    (http-client/delete url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn drop-shard
+  "Drop shard."
+  [client shard-id server-id]
+  ((drop-shard-req client shard-id server-id) :status))
 
 ;;
 ;; ## Post time-series points
