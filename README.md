@@ -280,6 +280,7 @@ API Docs
 
   - [@olauzon](https://github.com/olauzon)
   - [@pradeepchhetri](https://github.com/pradeepchhetri)
+  - [@rborer](https://github.com/rborer)
 
 ## License
 
