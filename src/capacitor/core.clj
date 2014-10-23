@@ -25,9 +25,7 @@
       :port         (default: 8086)
       :username     (default \"root\")
       :password     (default \"root\")
-      :db           (default: \"default-db\")
-      :post-opts    (http post options, default: \"nil\")
-      :get-opts     (http get options, default: \"nil\")"
+      :db           (default: \"default-db\")"
   [opts]
   (merge default-client opts))
 
@@ -81,7 +79,6 @@
     (cond
       (= (action :action) :delete-series) (str "/" (client :db) "/series/" (action :series))
       (= (action :action) :delete-db) (str "/" (client :db))
-      (= (action :action) :get-dbs)   "s"
       (contains? #{ :create-db-user
                     :get-db-user-users
                     :update-db-user
@@ -442,13 +439,12 @@
     (let [url  (gen-url client { :action         :post-points
                                  :time-precision time-precision })
           body (json/generate-string points)]
-      (http-client/post url (merge {
+      (http-client/post url {
         :body                  body
         :socket-timeout        1000 ;; in milliseconds
         :conn-timeout          1000 ;; in milliseconds
         :content-type          :json
-        :throw-entire-message? true }
-        (:post-opts client))))))
+        :throw-entire-message? true }))))
 
 (defn format-payload
   [res]
@@ -511,12 +507,11 @@
     (let [url (str (gen-url client {:action         :get-query
                                     :time-precision time-precision})
                                    (URLEncoder/encode query))]
-      (http-client/get url (merge {
+      (http-client/get url {
         :socket-timeout        10000  ;; in milliseconds
         :conn-timeout          10000  ;; in milliseconds
         :accept                :json
-        :throw-entire-message? true }
-        (:get-opts client))))))
+        :throw-entire-message? true }))))
 
 (defn format-series-results
   {:no-doc true}
