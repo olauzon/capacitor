@@ -81,7 +81,6 @@
     (cond
       (= (action :action) :delete-series) (str "/" (client :db) "/series/" (action :series))
       (= (action :action) :delete-db) (str "/" (client :db))
-      (= (action :action) :get-dbs)   "s"
       (contains? #{ :create-db-user
                     :get-db-user-users
                     :update-db-user

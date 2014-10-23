@@ -56,7 +56,7 @@
 
 (deftest test-gen-url-02
   (testing "get-dbs"
-    (is (= "http://localhost:8086/dbs?u=root&p=root"
+    (is (= "http://localhost:8086/db?u=root&p=root"
            (gen-url (make-client {}) :get-dbs)))))
 
 (deftest test-gen-url-03
