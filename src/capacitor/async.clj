@@ -56,9 +56,9 @@
 
 (defn enqueue
   "Append event to `e-in` channel.
-  The `:time` attribute (in ms) is automatically added when the event is added."
+  The `:time` attribute (in ms) is automatically added when the event is added and no existing attribute is found."
   [e-in event]
-  (let [ts (System/currentTimeMillis)]
+  (let [ts (or (:time event) (System/currentTimeMillis))]
     (put! e-in (merge { :time ts } event))))
 
 (defn post-points-req
