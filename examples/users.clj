@@ -4,6 +4,8 @@
 
 (influx/create-db client)
 
+(influx/create-shard-space client {:name "example" :regex "/.*/" :retentionPolicy "1d" :shardDuration "1h" :replicationFactor 1 :split 1})
+
 (influx/get-db-users client)
 
 (influx/create-db-user client "myuser" "mypassword")
