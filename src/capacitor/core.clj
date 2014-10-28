@@ -153,7 +153,7 @@
 (defn get-dbs
   "Returns vector of database names."
   [client]
-  (json/parse-string ((get-dbs-req client) :body)))
+  (json/parse-string ((get-dbs-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; ### Drop a database
@@ -232,7 +232,7 @@
 (defn get-admin-users
   "List admin users"
   [client]
-  (json/parse-string ((get-admin-users-req client) :body)))
+  (json/parse-string ((get-admin-users-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Update admin user
@@ -311,7 +311,7 @@
 (defn get-db-users
   "List database users"
   [client]
-  (json/parse-string ((get-db-users-req client) :body)))
+  (json/parse-string ((get-db-users-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Update database user
@@ -370,7 +370,7 @@
 (defn get-shards
   "List shards."
   [client]
-  (json/parse-string ((get-shards-req client) :body)))
+  (json/parse-string ((get-shards-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Get all shard spaces
@@ -387,7 +387,7 @@
 (defn get-shard-spaces
   "List shard spaces."
   [client]
-  (json/parse-string ((get-shard-spaces-req client) :body)))
+  (json/parse-string ((get-shard-spaces-req client) :body) true))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
