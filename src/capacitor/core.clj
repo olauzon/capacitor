@@ -45,7 +45,14 @@
     ":"
     (client :port)
     (cond (contains? #{:ping} (action :action))
-          "/ping"
+          (str "/" (-> action :action name))
+          (contains? #{:sync} (action :action))
+          (str "/"
+               (-> action :action name)
+               "?u="
+               (client :username)
+               "&p="
+               (client :password))
           (contains? #{ :create-admin-user
                         :delete-admin-user
                         :update-admin-user
@@ -122,6 +129,10 @@
   [string]
   (json/parse-string string true))
 
+;;
+;; ## Database status
+;;
+
 (defn ping
   [client]
   (-> client
@@ -134,6 +145,19 @@
                (:get-opts client)))
       :body
       kw-parse-string))
+
+(defn sync?
+  [client]
+  (-> client
+      (gen-url :sync)
+      (http-client/get 
+        (merge {:socket-timeout       1000
+                :conn-timeout         1000
+                :accept               :json
+                :trow-entire-message? true}
+               (:get-opts client)))
+      :body
+      Boolean/parseBoolean))
 
 ;;
 ;; ## Database management
