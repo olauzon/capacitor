@@ -394,18 +394,18 @@
 
 (defn create-shard-space-req
   "Create shard space. Returns full HTTP response.
-  Default parameters: regex \"/.*/\", retentionPolicy \"inf\", shardDuration \"7d\""
-  [client {:keys [name regex retentionPolicy shardDuration replicationFactor split]
+  Default parameters: regex \"/.*/\", retention-policy \"inf\", shard-duration \"7d\""
+  [client {:keys [name regex retention-policy shard-duration replication-factor split]
            :or {regex "/.*/"
-                retentionPolicy "inf"
-                shardDuration "7d"}
+                retention-policy "inf"
+                shard-duration "7d"}
            :as shard-space}]
   (let [url  (gen-url client :create-shard-space)
         body (json/generate-string {:name name
                                     :regex regex
-                                    :retentionPolicy retentionPolicy
-                                    :shardDuration shardDuration
-                                    :replicationFactor replicationFactor
+                                    :retentionPolicy retention-policy
+                                    :shardDuration shard-duration
+                                    :replicationFactor replication-factor
                                     :split split})]
     (http-client/post url {
       :body                  body
