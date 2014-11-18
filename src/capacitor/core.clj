@@ -44,7 +44,16 @@
     (client :host)
     ":"
     (client :port)
-    (cond (contains? #{ :create-admin-user
+    (cond (contains? #{:ping} (action :action))
+          (str "/" (-> action :action name))
+          (contains? #{:sync} (action :action))
+          (str "/"
+               (-> action :action name)
+               "?u="
+               (client :username)
+               "&p="
+               (client :password))
+          (contains? #{ :create-admin-user
                         :delete-admin-user
                         :update-admin-user
                         :get-admin-users } (action :action))
@@ -114,6 +123,41 @@
 
 (def gen-url
   (memoize gen-url-multi))
+
+(defn- kw-parse-string
+  "Parse the JSON string, coerce keys to keywords"
+  [string]
+  (json/parse-string string true))
+
+;;
+;; ## Database status
+;;
+
+(defn ping
+  [client]
+  (-> client
+      (gen-url :ping)
+      (http-client/get 
+        (merge {:socket-timeout       1000
+                :conn-timeout         1000
+                :accept               :json
+                :trow-entire-message? true}
+               (:get-opts client)))
+      :body
+      kw-parse-string))
+
+(defn sync?
+  [client]
+  (-> client
+      (gen-url :sync)
+      (http-client/get 
+        (merge {:socket-timeout       1000
+                :conn-timeout         1000
+                :accept               :json
+                :trow-entire-message? true}
+               (:get-opts client)))
+      :body
+      Boolean/parseBoolean))
 
 ;;
 ;; ## Database management
