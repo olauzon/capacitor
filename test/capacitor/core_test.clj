@@ -140,6 +140,11 @@
                                   :shard-space "default"}) :drop-shard-space)))))
 
 (deftest test-client-17
+  (testing "create-shard-space"
+    (is (= "http://localhost:8086/cluster/shard_spaces/my-db?u=root&p=root"
+           (gen-url (make-client {:db "my-db"}) :create-shard-space)))))
+
+(deftest test-client-18
   (testing "drop-shard"
     (is (= "http://localhost:8086/cluster/shards/1?u=root&p=root"
            (gen-url (make-client {:db "my-db"

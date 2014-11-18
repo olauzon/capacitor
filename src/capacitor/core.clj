@@ -391,6 +391,35 @@
   [client]
   (json/parse-string ((get-shard-spaces-req client) :body) true))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Create shard space
+
+(defn create-shard-space-req
+  "Create shard space. Returns full HTTP response.
+  Default parameters: regex \"/.*/\", retention-policy \"inf\", shard-duration \"7d\""
+  [client {:keys [name regex retention-policy shard-duration replication-factor split]
+           :or {regex "/.*/"
+                retention-policy "inf"
+                shard-duration "7d"}
+           :as shard-space}]
+  (let [url  (gen-url client :create-shard-space)
+        body (json/generate-string {:name name
+                                    :regex regex
+                                    :retentionPolicy retention-policy
+                                    :shardDuration shard-duration
+                                    :replicationFactor replication-factor
+                                    :split split})]
+    (http-client/post url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn create-shard-space
+  "Create a new shard space in the current database."
+  [client shard-space]
+  (json/parse-string ((create-shard-space-req client shard-space) :body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Drop shard space
