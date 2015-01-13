@@ -98,10 +98,6 @@
 
 (influx-async/read-results results-out)
 
+(influx-async/get-query c query-00 results-out)
 
-(async/go
-  (loop [i 0]
-  (when-let [r (async/<! results-out)]
-    (println (str "result " i ": "))
-    (println r)
-    (recur (inc i)))))
+(influx-async/get-query c query-00 results-out)

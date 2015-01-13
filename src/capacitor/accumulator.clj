@@ -8,8 +8,7 @@
 (defn run!
   [e-in b-out size msecs]
   "Buffer events accumulating from `e-in` for a maximum batch of `size` or
-  `msecs` milliseconds. Responses are returned in `r-out` to be consumed by a
-  monitoring loop."
+  `msecs` milliseconds. Batches are put in `b-out`."
   (thread
     (loop [batch []
            to    (timeout msecs)]
