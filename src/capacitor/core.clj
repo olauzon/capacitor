@@ -25,7 +25,9 @@
       :port         (default: 8086)
       :username     (default \"root\")
       :password     (default \"root\")
-      :db           (default: \"default-db\")"
+      :db           (default: \"default-db\")
+      :post-opts    (http post options, default: \"nil\")
+      :get-opts     (http get options, default: \"nil\")"
   [opts]
   (merge default-client opts))
 
@@ -42,7 +44,16 @@
     (client :host)
     ":"
     (client :port)
-    (cond (contains? #{ :create-admin-user
+    (cond (contains? #{:ping} (action :action))
+          (str "/" (-> action :action name))
+          (contains? #{:sync} (action :action))
+          (str "/"
+               (-> action :action name)
+               "?u="
+               (client :username)
+               "&p="
+               (client :password))
+          (contains? #{ :create-admin-user
                         :delete-admin-user
                         :update-admin-user
                         :get-admin-users } (action :action))
@@ -113,6 +124,41 @@
 (def gen-url
   (memoize gen-url-multi))
 
+(defn- kw-parse-string
+  "Parse the JSON string, coerce keys to keywords"
+  [string]
+  (json/parse-string string true))
+
+;;
+;; ## Database status
+;;
+
+(defn ping
+  [client]
+  (-> client
+      (gen-url :ping)
+      (http-client/get 
+        (merge {:socket-timeout       1000
+                :conn-timeout         1000
+                :accept               :json
+                :trow-entire-message? true}
+               (:get-opts client)))
+      :body
+      kw-parse-string))
+
+(defn sync?
+  [client]
+  (-> client
+      (gen-url :sync)
+      (http-client/get 
+        (merge {:socket-timeout       1000
+                :conn-timeout         1000
+                :accept               :json
+                :trow-entire-message? true}
+               (:get-opts client)))
+      :body
+      Boolean/parseBoolean))
+
 ;;
 ;; ## Database management
 ;;
@@ -153,7 +199,7 @@
 (defn get-dbs
   "Returns vector of database names."
   [client]
-  (json/parse-string ((get-dbs-req client) :body)))
+  (json/parse-string ((get-dbs-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; ### Drop a database
@@ -232,7 +278,7 @@
 (defn get-admin-users
   "List admin users"
   [client]
-  (json/parse-string ((get-admin-users-req client) :body)))
+  (json/parse-string ((get-admin-users-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Update admin user
@@ -311,7 +357,7 @@
 (defn get-db-users
   "List database users"
   [client]
-  (json/parse-string ((get-db-users-req client) :body)))
+  (json/parse-string ((get-db-users-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Update database user
@@ -370,7 +416,7 @@
 (defn get-shards
   "List shards."
   [client]
-  (json/parse-string ((get-shards-req client) :body)))
+  (json/parse-string ((get-shards-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Get all shard spaces
@@ -387,8 +433,37 @@
 (defn get-shard-spaces
   "List shard spaces."
   [client]
-  (json/parse-string ((get-shard-spaces-req client) :body)))
+  (json/parse-string ((get-shard-spaces-req client) :body) true))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Create shard space
+
+(defn create-shard-space-req
+  "Create shard space. Returns full HTTP response.
+  Default parameters: regex \"/.*/\", retention-policy \"inf\", shard-duration \"7d\""
+  [client {:keys [name regex retention-policy shard-duration replication-factor split]
+           :or {regex "/.*/"
+                retention-policy "inf"
+                shard-duration "7d"}
+           :as shard-space}]
+  (let [url  (gen-url client :create-shard-space)
+        body (json/generate-string {:name name
+                                    :regex regex
+                                    :retentionPolicy retention-policy
+                                    :shardDuration shard-duration
+                                    :replicationFactor replication-factor
+                                    :split split})]
+    (http-client/post url {
+      :body                  body
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :content-type          :json
+      :throw-entire-message? true })))
+
+(defn create-shard-space
+  "Create a new shard space in the current database."
+  [client shard-space]
+  (json/parse-string ((create-shard-space-req client shard-space) :body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Drop shard space
@@ -439,12 +514,13 @@
     (let [url  (gen-url client { :action         :post-points
                                  :time-precision time-precision })
           body (json/generate-string points)]
-      (http-client/post url {
+      (http-client/post url (merge {
         :body                  body
         :socket-timeout        1000 ;; in milliseconds
         :conn-timeout          1000 ;; in milliseconds
         :content-type          :json
-        :throw-entire-message? true }))))
+        :throw-entire-message? true }
+        (:post-opts client))))))
 
 (defn format-payload
   [res]
@@ -507,11 +583,12 @@
     (let [url (str (gen-url client {:action         :get-query
                                     :time-precision time-precision})
                                    (URLEncoder/encode query))]
-      (http-client/get url {
+      (http-client/get url (merge {
         :socket-timeout        10000  ;; in milliseconds
         :conn-timeout          10000  ;; in milliseconds
         :accept                :json
-        :throw-entire-message? true }))))
+        :throw-entire-message? true }
+        (:get-opts client))))))
 
 (defn format-series-results
   {:no-doc true}

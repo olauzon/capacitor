@@ -1,12 +1,16 @@
 (ns capacitor.async
   (:require
     [capacitor.accumulator :as acc]
+    [capacitor.core :refer [gen-url
+                            make-payload
+                            read-result]]
     [org.httpkit.client :as http-client]
     [cheshire.core      :as json]
     [clojure.tools.logging :as log]
     [clojure.core.async :refer [chan
                                 sliding-buffer
                                 go
+                                go-loop
                                 >!
                                 >!!
                                 put!
@@ -15,13 +19,7 @@
                                 alt!!
                                 <!
                                 <!!]])
-  (:use [capacitor.core :exclude [create-db-req
-                                  create-db
-                                  post-points-req
-                                  post-points
-                                  get-query-req
-                                  get-query]])
-  (import [java.net URLEncoder]))
+  (:import [java.net URLEncoder]))
 
 (defn make-chan
   "Make a sliding buffer channel for async input or output."
@@ -124,11 +122,10 @@
 
 (defn read-results
   [r-out]
-  (go
-    (loop []
-      (when-let [r (<! r-out)]
-        (println (read-result (<! r)))
-        (recur)))))
+  (go-loop []
+    (when-let [r (<!! r-out)]
+      (println (read-result (<!! r)))
+      (recur))))
 
 (defn get-query
   "Submit query. Returns results in `r-out` channel."
