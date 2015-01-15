@@ -1,5 +1,6 @@
 (ns capacitor.core
   (:require [clj-http.client :as http-client]
+            [clojure.set :as set]
             [cheshire.core   :as json])
   (import [java.net URLEncoder]))
 
@@ -70,12 +71,14 @@
           (contains? #{ :drop-shard
                         :get-shards
                         :get-shard-spaces
+                        :update-shard-space
                         :drop-shard-space
                         :create-shard-space } (action :action))
           (str
            "/cluster"
            (cond
              (= (action :action) :get-shard-spaces) "/shard_spaces"
+             (= (action :action) :update-shard-space) (str "/shard_spaces/" (client :db) "/" (client :shard-space))
              (= (action :action) :drop-shard-space) (str "/shard_spaces/" (client :db) "/" (client :shard-space))
              (= (action :action) :create-shard-space) (str "/shard_spaces/" (client :db))
              (= (action :action) :get-shards) "/shards"
@@ -419,6 +422,22 @@
   (json/parse-string ((get-shards-req client) :body) true))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Shard key mappings functions
+
+(def ^{:private true} api->shard-config {:retentionPolicy   :retention-policy
+                                         :shardDuration     :shard-duration
+                                         :replicationFactor :replication-factor})
+(def ^{:private true} shard-config->api (set/map-invert api->shard-config))
+
+(defn api->shard-config-keys
+  [l]
+  (map #(set/rename-keys % api->shard-config) l))
+
+(defn shard-config->api-keys
+  [m]
+  (set/rename-keys m shard-config->api))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Get all shard spaces
 
 (defn get-shard-spaces-req
@@ -433,7 +452,11 @@
 (defn get-shard-spaces
   "List shard spaces."
   [client]
-  (json/parse-string ((get-shard-spaces-req client) :body) true))
+  (-> client
+      get-shard-spaces-req
+      :body
+      (json/parse-string true)
+      api->shard-config-keys))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Create shard space
@@ -444,8 +467,7 @@
   [client {:keys [name regex retention-policy shard-duration replication-factor split]
            :or {regex "/.*/"
                 retention-policy "inf"
-                shard-duration "7d"}
-           :as shard-space}]
+                shard-duration "7d"}}]
   (let [url  (gen-url client :create-shard-space)
         body (json/generate-string {:name name
                                     :regex regex
@@ -462,8 +484,31 @@
 
 (defn create-shard-space
   "Create a new shard space in the current database."
-  [client shard-space]
-  (json/parse-string ((create-shard-space-req client shard-space) :body)))
+  [client shard-config]
+  (json/parse-string ((create-shard-space-req client shard-config) :body)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; #### Update shard space
+
+(defn update-shard-space-req
+  "Update shard space. Returns full HTTP response."
+  [client database shard-space shard-config]
+  (let [client (merge client { :shard-space shard-space
+                               :db          database })
+        url  (gen-url client :update-shard-space)
+        body (-> shard-config shard-config->api-keys json/generate-string)]
+    (http-client/post url {
+                           :body                  body
+                           :socket-timeout        1000 ;; in milliseconds
+                           :conn-timeout          1000 ;; in milliseconds
+                           :content-type          :json
+                           :throw-entire-message? true })))
+
+(defn update-shard-space
+  "Update an existing shard space in the given database. All shard config parameters are required!"
+  [client database shard-space {:keys [regex retention-policy shard-duration replication-factor split]
+                                :as shard-config}]
+  (json/parse-string ((update-shard-space-req client database shard-space shard-config) :body)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; #### Drop shard space

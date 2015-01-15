@@ -134,17 +134,23 @@
            (gen-url (make-client {:db "my-db"}) :get-shard-spaces)))))
 
 (deftest test-client-16
+  (testing "update-shard-space"
+    (is (= "http://localhost:8086/cluster/shard_spaces/my-db/default?u=root&p=root"
+           (gen-url (make-client {:db "my-db"
+                                  :shard-space "default"}) :update-shard-space)))))
+
+(deftest test-client-17
   (testing "drop-shard-space"
     (is (= "http://localhost:8086/cluster/shard_spaces/my-db/default?u=root&p=root"
            (gen-url (make-client {:db "my-db"
                                   :shard-space "default"}) :drop-shard-space)))))
 
-(deftest test-client-17
+(deftest test-client-18
   (testing "create-shard-space"
     (is (= "http://localhost:8086/cluster/shard_spaces/my-db?u=root&p=root"
            (gen-url (make-client {:db "my-db"}) :create-shard-space)))))
 
-(deftest test-client-18
+(deftest test-client-19
   (testing "drop-shard"
     (is (= "http://localhost:8086/cluster/shards/1?u=root&p=root"
            (gen-url (make-client {:db "my-db"
@@ -231,3 +237,25 @@
         {:email "john@gmail.com"
          :series "test-series-01"}
       ])))))
+
+(deftest test-api->shard-config-keys
+  (testing "api->shard-config-keys"
+    (is (= (list {:name "test"
+                  :retention-policy "1d"
+                  :shard-duration "1h"
+                  :replication-factor 3})
+           (api->shard-config-keys (list {:name "test"
+                                          :retentionPolicy "1d"
+                                          :shardDuration "1h"
+                                          :replicationFactor 3}))))))
+
+(deftest test-shard-config->api-keys
+  (testing "shard-config->api-keys"
+    (is (= {:name "test"
+            :retentionPolicy "1d"
+            :shardDuration "1h"
+            :replicationFactor 3}
+           (shard-config->api-keys {:name "test"
+                                    :retention-policy "1d"
+                                    :shard-duration "1h"
+                                    :replication-factor 3})))))
