@@ -6,9 +6,9 @@
 ;;
 
 (defn run!
-  [e-in b-out size msecs]
   "Buffer events accumulating from `e-in` for a maximum batch of `size` or
   `msecs` milliseconds. Batches are put in `b-out`."
+  [e-in b-out size msecs]
   (thread
     (loop [batch []
            to    (timeout msecs)]
