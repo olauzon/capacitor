@@ -1,4 +1,4 @@
-(defproject capacitor "0.4.1"
+(defproject capacitor "0.4.2-SNAPSHOT"
   :description "A Clojure client for InfluxDB"
   :url "https://github.com/olauzon/capacitor"
   :license {
