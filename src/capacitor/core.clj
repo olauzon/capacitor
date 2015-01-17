@@ -660,3 +660,16 @@
     (read-result (get-query-req client query)))
   ([client time-precision query]
     (read-result (get-query-req client time-precision query))))
+
+(defn list-series
+  "List all series in the current client database or in the specified database."
+  ([{:keys [db] :as client}]
+    (list-series client db))
+  ([client database]
+    (->> "list series"
+         (get-query-req (merge client {:db database}))
+         :body
+         (#(json/parse-string % true))
+         first
+         :points
+         (map second))))
