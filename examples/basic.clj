@@ -20,30 +20,32 @@
     :username "myuser"
     :password "mypassword" }))
 
-(influx/post-points c "logins" [
-  {:email "john@gmail.com"}
-  {:email "john@yahoo.com"}
-  {:email "john@hotmail.com"}
-  {:email "jill@gmail.com"}
-  {:email "jason@gmail.com"}
-  {:email "alice@yahoo.com"}
-  {:email "bob@mac.com"} ])
+(influx/post-points c "logins-00" [
+  {:user "john"}
+  {:user "john"}
+  {:user "john"}
+  {:user "jill"}
+  {:user "jason"}
+  {:user "alice"}
+  {:user "bob"} ])
 
-(def query-00
+(influx/post-points c "posts-01" [
+  {:user "charlie"}
+  {:user "miles"}
+  {:user "bill"}
+  {:user "ella"}
+  {:user "wayne"}
+  {:user "joe"}
+  {:user "cannonball"} ])
+
+(def query
   (str
     "SELECT COUNT(email) "
     "FROM logins "
-    "GROUP BY time(1s) "
-    "WHERE email =~ /.*gmail\\.com/"))
+    "GROUP BY time(1s)"))
 
-(def query-01
-  (str
-    "SELECT COUNT(email) "
-    "FROM logins "
-    "GROUP BY time(1m)"))
-
-(influx/get-query c query-00)
-
-(influx/get-query c query-01)
+(influx/get-query c query)
 
 (influx/delete-series c "logins")
+
+(influx/list-series c)
