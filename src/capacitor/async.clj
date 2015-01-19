@@ -6,6 +6,7 @@
                             read-result]]
     [org.httpkit.client :as http-client]
     [cheshire.core      :as json]
+    [clojure.tools.logging :as log]
     [clojure.core.async :refer [chan
                                 sliding-buffer
                                 go
@@ -62,18 +63,25 @@
 (defn post-points-req
   [client points]
   (let [url  (gen-url client :post-points)
-        body (json/generate-string points)]
-    (http-client/post url {
-      :body                  body
-      ;;:socket-timeout        1000 ;; in milliseconds
-      ;;:conn-timeout          1000 ;; in milliseconds
-      :content-type          :json
-      :throw-entire-message? true })))
+        body (json/generate-string points)
+        opts {
+              :body                  body
+              ;;:socket-timeout        1000 ;; in milliseconds
+              ;;:conn-timeout          1000 ;; in milliseconds
+              :content-type          :json
+              :throw-entire-message? true }]
+    (http-client/post url opts
+                      (fn [{:keys [status error]}] ;; asynchronous response handling
+                        (if error
+                          (log/warnf error "Failed to post %d point(s), received status %s" (count points) status)
+                          (log/debugf "async http post: %s" status))))))
 
 (defn post-points
   "Post points to database. Returns HTTP response.
   Points should be submitted as a vector of maps."
   [client values]
+  (when (log/enabled? :debug)
+    (log/debugf "Posting %d value(s): %s" (count values) values))
   (post-points-req client (make-payload values)))
 
 ;;

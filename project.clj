@@ -9,7 +9,8 @@
     [org.clojure/core.async "0.1.267.0-0d7780-alpha"]
     [clj-http               "0.9.1"]
     [http-kit               "2.1.18"]
-    [cheshire               "5.3.1"]]
+    [cheshire               "5.3.1"]
+    [org.clojure/tools.logging "0.3.1"]]
   :plugins [
     [codox           "0.6.6"]
     [lein-marginalia "0.7.1"]]
