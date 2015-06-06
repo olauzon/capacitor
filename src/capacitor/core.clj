@@ -154,6 +154,10 @@
 ;; ## InfluxDB Version
 ;;
 
+(defn get-version
+  [array]
+  (if (= (count array) 1) (first array) (second array)))
+
 (defn version
   [client]
   (-> (-> client
@@ -167,7 +171,7 @@
       (:headers)
       (get "x-influxdb-version")
       (split #"\s")
-      (second)))
+      (get-version)))
 
 (defn sync?
   [client]
