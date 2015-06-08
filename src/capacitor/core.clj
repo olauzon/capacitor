@@ -140,11 +140,11 @@
   [client]
   (-> client
       (gen-url :ping)
-      (http-client/get 
-        (merge {:socket-timeout       1000
-                :conn-timeout         1000
-                :accept               :json
-                :trow-entire-message? true}
+      (http-client/get
+        (merge {:socket-timeout        1000
+                :conn-timeout          1000
+                :accept                :json
+                :throw-entire-message? true}
                (:get-opts client)))
       :body
       kw-parse-string))
@@ -153,11 +153,11 @@
   [client]
   (-> client
       (gen-url :sync)
-      (http-client/get 
-        (merge {:socket-timeout       1000
-                :conn-timeout         1000
-                :accept               :json
-                :trow-entire-message? true}
+      (http-client/get
+        (merge {:socket-timeout        1000
+                :conn-timeout          1000
+                :accept                :json
+                :throw-entire-message? true}
                (:get-opts client)))
       :body
       Boolean/parseBoolean))
