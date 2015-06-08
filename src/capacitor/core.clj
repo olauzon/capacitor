@@ -1,4 +1,5 @@
 (ns capacitor.core
+  (:use [clojure.string :only [split]])
   (:require [clj-http.client :as http-client]
             [clojure.set :as set]
             [cheshire.core   :as json])
@@ -148,6 +149,29 @@
                (:get-opts client)))
       :body
       kw-parse-string))
+
+;;
+;; ## InfluxDB Version
+;;
+
+(defn get-version
+  [array]
+  (if (= (count array) 1) (first array) (second array)))
+
+(defn version
+  [client]
+  (-> (-> client
+        (gen-url :ping)
+        (http-client/get
+          (merge {:socket-timeout        10000
+                  :conn-timeout          10000
+                  :accept                :json
+                  :throw-entire-message? true}
+                  (:get-opts client))))
+      (:headers)
+      (get "x-influxdb-version")
+      (split #"\s")
+      (get-version)))
 
 (defn sync?
   [client]
