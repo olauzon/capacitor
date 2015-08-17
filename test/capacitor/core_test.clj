@@ -21,7 +21,8 @@
         :port     8086
         :username "root"
         :password "root"
-        :db       "default-db"
+        :db       "testdb"
+        :version  "0.8"
       }
       (make-client {})))))
 
@@ -35,6 +36,7 @@
         :username "hello"
         :password "world"
         :db       "my-database-name"
+        :version  "0.8"
       }
       (make-client {
         :host     "influx.myapp.com"
@@ -165,6 +167,11 @@
   (testing "sync"
     (is (= "http://localhost:8086/sync?u=root&p=root"
            (gen-url (make-client {}) :sync)))))
+
+(deftest test-gen-url-20
+  (testing "post-points-again"
+    (is (= "http://localhost:8086/write?db=testdb&rp=&precision=&consistency=&u=root&p=root"
+           (gen-url (make-client {:version "0.9"}) :post-points)))))
 
 (deftest test-format-results-00
   (testing "format-results"
