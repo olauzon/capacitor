@@ -16,7 +16,18 @@
      :port        8086
      :username    "root"
      :password    "root"
-     :db          "default-db"})
+     :db          "testdb"
+     :version     "0.8" })
+
+;;
+;; ## Default write policy options
+;;
+
+(def default-write-options
+  "Default write policy options"
+  { :retention-policy   "default"
+    :precision          "s"
+    :consistency        "all" })
 
 (defn make-client
   "Returns a map representing an HTTP client configuration.
@@ -34,10 +45,32 @@
   (merge default-client opts))
 
 ;;
-;; ## HTTP URL generation
+;; ## HTTP URL generation for InfluxDB version >= 0.9
 ;;
 
-(defn gen-url-fn
+(defn gen-url-9-fn
+  {:no-doc true}
+  [client action]
+  (str
+   (client :scheme)
+   "://"
+   (client :host)
+   ":"
+   (client :port)
+   (cond
+    (= (action :action) :post-points) (str "/write?"
+                                           "db=" (client :db) "&"
+                                           "rp=" (action :retention-policy) "&"
+                                           "precision=" (action :precision) "&"
+                                           "consistency=" (action :consistency) "&"
+                                           "u=" (client :username) "&"
+                                           "p=" (client :password)))))
+
+;;
+;; ## HTTP URL generation for InfluxDB version < 0.9
+;;
+
+(defn gen-url-8-fn
   {:no-doc true}
   [client action]
   (str
@@ -113,6 +146,13 @@
       (str "&time_precision=" (action :time-precision)))
     (cond
       (= (action :action) :get-query) "&q=")))))
+
+(defn gen-url-fn
+  {:no-doc true}
+  [client action]
+  (case (:version client)
+    "0.8" (gen-url-8-fn client action)
+    "0.9" (gen-url-9-fn client action)))
 
 (defmulti gen-url-multi
   (fn [_ action] (class action)))
@@ -573,12 +613,12 @@
   ((drop-shard-req client shard-id server-id) :status))
 
 ;;
-;; ## Post time-series points
+;; ## Post time-series points for InfluxDB version < 0.9
 ;;
 
-(defn post-points-req
+(defn post-points-8-req
   ([client points]
-    (post-points-req client points nil))
+    (post-points-8-req client points nil))
   ([client points time-precision]
     (let [url  (gen-url client { :action         :post-points
                                  :time-precision time-precision })
@@ -629,20 +669,55 @@
   ([series-name values]
     (make-payload (map #(assoc % :series series-name) values))))
 
-(defn post-points
+(defn post-points-8
   "Post points to database. Returns HTTP status on success.
   Points should be submitted as a vector of maps."
   ([client series-name values]
-    ((post-points-req client (make-payload series-name values)) :status))
+    ((post-points-8-req client (make-payload series-name values)) :status))
   ([client series-name time-precision values]
-    ((post-points-req client
-                      (make-payload series-name values)
-                      time-precision) :status)))
+    ((post-points-8-req client
+                        (make-payload series-name values)
+                        time-precision) :status)))
+
+;;
+;; ## Post time-series points for InfluxDB version >= 0.9
+;;
+
+(defn post-points-9
+  "Post points to database. Returns HTTP status on success.
+   Uses influxdb's http line protocol to submit data-points"
+  ([client points]
+    (post-points-9 client points { :precision        nil
+                                   :consistency      nil
+                                   :retention-policy nil }))
+  ([client points write-options]
+    (let [url  (gen-url client (merge { :action            :post-points
+                                        :precision         (write-options :precision)
+                                        :consistency       (write-options :consistency)
+                                        :retention-policy  (write-options :retention-policy) }
+                                      default-write-options))
+          body points]
+      ((http-client/post url (merge {
+                                    :body                  body
+                                    :socket-timeout        5000           ;; in milliseconds
+                                    :conn-timeout          5000           ;; in milliseconds
+                                    :content-type          :text
+                                    :throw-entire-message? true } (:post-opts client))) :status ))))
+
+(defn post-points
+  "Post points to database based upon the InfluxDB version"
+  ([client points]
+   (case (:version client)
+     "0.8" (post-points-8 client "testseries" points)
+     "0.9" (post-points-9 client points)))
+  ([client series-name points]
+   (case (:version client)
+     "0.8" (post-points-8 client series-name points)
+     "0.9" (post-points-9 client points))))
 
 ;;
 ;; ## Query time-series
 ;;
-
 
 (defn get-query-req
   "Submit query. Returns raw HTTP response."
