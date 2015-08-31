@@ -57,14 +57,24 @@
    (client :host)
    ":"
    (client :port)
-   (cond
-    (= (action :action) :post-points) (str "/write?"
-                                           "db=" (client :db) "&"
-                                           "rp=" (action :retention-policy) "&"
-                                           "precision=" (action :precision) "&"
-                                           "consistency=" (action :consistency) "&"
-                                           "u=" (client :username) "&"
-                                           "p=" (client :password)))))
+   (str
+     (cond
+       (= (action :action) :post-points) (str "/write?"
+                                              "db=" (client :db) "&"
+                                              "rp=" (action :retention-policy) "&"
+                                              "precision=" (action :precision) "&"
+                                              "consistency=" (action :consistency) "&"
+                                              "u=" (client :username) "&"
+                                              "p=" (client :password))
+       (= (action :action) :get-query) (str "/query?"
+                                            "db=" (client :db) "&"
+                                            "u=" (client :username) "&"
+                                            "p=" (client :password) "&"
+                                            "q=")
+       :else (str "/query?"
+                  "u=" (client :username) "&"
+                  "p=" (client :password) "&"
+                  "q=")))))
 
 ;;
 ;; ## HTTP URL generation for InfluxDB version < 0.9
@@ -737,28 +747,40 @@
 (defn format-series-results
   {:no-doc true}
   [series-results]
-  (let [points      (series-results "points")
+  (let [points      (or (series-results "points") (series-results "values"))
         series-name (series-results "name")
         columns     (series-results "columns")
         column-keys (map keyword columns)
         column-maps (map #(zipmap column-keys %) points)]
     (map #(merge % {:name series-name}) column-maps)))
 
-(defn format-results
+(defn format-results-8
   {:no-doc true}
   [results]
   (vec (flatten (map format-series-results results))))
 
+(defn format-results-9
+  {:no-doc true}
+  [results]
+  (vec (flatten (map format-series-results (flatten (map #(get % "series") (get results "results")))))))
+
+(defn format-results
+  {:no-doc true}
+  [client results]
+  (case (:version client)
+    "0.8" (format-results-8 results)
+    "0.9" (format-results-9 results)))
+
 (defn read-result
-  [r]
-  (format-results (json/parse-string (r :body))))
+  [client r]
+  (format-results client (json/parse-string (r :body))))
 
 (defn get-query
   "Submit query. Returns denormalized results set from string query."
   ([client query]
-    (read-result (get-query-req client query)))
+    (read-result client (get-query-req client query)))
   ([client time-precision query]
-    (read-result (get-query-req client time-precision query))))
+    (read-result client (get-query-req client time-precision query))))
 
 (defn list-series
   "List all series in the current client database or in the specified database."
