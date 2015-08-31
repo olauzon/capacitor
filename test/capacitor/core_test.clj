@@ -201,7 +201,7 @@
                 :count 7
               }
             ]
-           (format-results fixture-results-00)))))
+           (format-results (make-client {}) fixture-results-00)))))
 
 (deftest test-make-payload-00
   (testing "format-results" (is (=
