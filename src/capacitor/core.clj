@@ -243,7 +243,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;
 ;; ### Create a database
 
-(defn create-db-req
+(defn create-db-req-8
   "Create database defined in client. Returns raw HTTP response."
   [client]
   (let [url  (gen-url client :create-db)
@@ -254,6 +254,23 @@
       :conn-timeout         1000 ;; in milliseconds
       :content-type         :json
       :throw-entire-message? true })))
+
+(defn create-db-req-9
+  "Create database defined in client. Returns raw HTTP response."
+  [client]
+  (let [url (gen-url client :create-db)
+        uri (URLEncoder/encode (str "CREATE DATABASE " (client :db)))]
+    (http-client/get (str url uri) {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :accept                :json
+      :throw-entire-message? true })))
+
+(defn create-db-req
+  [client]
+  (case (:version client)
+    "0.8" (create-db-req-8 client)
+    "0.9" (create-db-req-9 client)))
 
 (defn create-db
   "Create database defined in client. Returns HTTP status on success."
