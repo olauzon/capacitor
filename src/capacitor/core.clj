@@ -280,7 +280,7 @@
 ;;;;;;;;;;;;;;;;;;;;;
 ;; ### List databases
 
-(defn get-dbs-req
+(defn get-dbs-req-8
   "List databases. Returns raw HTTP response."
   [client]
   (let [url (gen-url client :get-dbs)]
@@ -290,10 +290,41 @@
       :accept                :json
       :throw-entire-message? true })))
 
-(defn get-dbs
+(defn get-dbs-req-9
+  "List databases. Returns raw HTTP response."
+  [client]
+  (let [url (gen-url client :get-dbs)
+        uri (URLEncoder/encode "SHOW DATABASES")]
+    (http-client/get (str url uri) {
+      :socket-timeout        1000  ;; in milliseconds
+      :conn-timeout          1000  ;; in milliseconds
+      :accept                :json
+      :throw-entire-message? true })))
+
+(defn get-dbs-req
+  [client]
+  (case (:version client)
+    "0.8" (get-dbs-req-8 client)
+    "0.9" (get-dbs-req-9 client)))
+
+(defn get-dbs-8
   "Returns vector of database names."
   [client]
   (json/parse-string ((get-dbs-req client) :body) true))
+
+(defn get-dbs-9
+  "Returns vector of database names."
+  [client]
+  (mapcat
+   (fn [{:strs [columns values]}]
+     (map (partial zipmap (map keyword columns)) values))
+   (flatten (map #(get % "series") (get (json/parse-string ((get-dbs-req client) :body)) "results")))))
+
+(defn get-dbs
+  [client]
+  (case (:version client)
+    "0.8" (get-dbs-8 client)
+    "0.9" (get-dbs-9 client)))
 
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; ### Drop a database
