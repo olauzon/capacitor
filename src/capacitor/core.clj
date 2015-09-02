@@ -329,7 +329,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;
 ;; ### Drop a database
 
-(defn delete-db-req
+(defn delete-db-req-8
   "Delete database defined in client. Returns raw HTTP response."
   [client]
   (let [url (gen-url client :delete-db)]
@@ -337,6 +337,23 @@
       :socket-timeout        10000 ;; in milliseconds
       :conn-timeout          10000 ;; in milliseconds
       :throw-entire-message? true })))
+
+(defn delete-db-req-9
+  "Delete database defined in client. Returns raw HTTP response."
+  [client]
+  (let [url (gen-url client :delete-db)
+        uri (URLEncoder/encode (str "DROP DATABASE " (client :db)))]
+    (http-client/get (str url uri) {
+      :socket-timeout        1000 ;; in milliseconds
+      :conn-timeout          1000 ;; in milliseconds
+      :accept                :json
+      :throw-entire-message? true })))
+
+(defn delete-db-req
+  [client]
+  (case (:version client)
+    "0.8" (delete-db-req-8 client)
+    "0.9" (delete-db-req-9 client)))
 
 (defn delete-db
   "Delete database defined in client. Returns HTTP status on success."
