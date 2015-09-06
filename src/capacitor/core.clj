@@ -66,11 +66,12 @@
                                               "consistency=" (action :consistency) "&"
                                               "u=" (client :username) "&"
                                               "p=" (client :password))
-       (= (action :action) :get-query) (str "/query?"
-                                            "db=" (client :db) "&"
-                                            "u=" (client :username) "&"
-                                            "p=" (client :password) "&"
-                                            "q=")
+       (or (= (action :action) :get-query)
+           (= (action :action) :get-series)) (str "/query?"
+                                                  "db=" (client :db) "&"
+                                                  "u=" (client :username) "&"
+                                                  "p=" (client :password) "&"
+                                                  "q=")
        :else (str "/query?"
                   "u=" (client :username) "&"
                   "p=" (client :password) "&"
@@ -859,3 +860,28 @@
          first
          :points
          (map second))))
+
+;;
+;; ## Returns the list of series for InfluxDB >=0.9
+;; ## InfluxDB <= 0.8 has list-series
+;;
+
+(defn get-series-req
+  "List databases. Returns raw HTTP response."
+  [client]
+  (let [url (gen-url client :get-series)
+        uri (URLEncoder/encode "SHOW SERIES")]
+    (http-client/get (str url uri) {
+      :socket-timeout        1000  ;; in milliseconds
+      :conn-timeout          1000  ;; in milliseconds
+      :accept                :json
+      :throw-entire-message? true })))
+
+(defn get-series
+  "Returns vector of database names."
+  [client]
+  (mapcat
+   (fn [{:strs [columns values]}]
+     (map (partial zipmap (map keyword columns)) values))
+   (flatten (map #(get % "series") (get (json/parse-string ((get-series-req client) :body)) "results")))))
+
