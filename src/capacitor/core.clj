@@ -845,7 +845,7 @@
 (defn post-points-line-prot
   "Posts points to InfluxDB-0.9. Converts points to InfluxDB line-protocol. Points should be seq of elements. Each element is sequence of key tags fields and optionaly timestamp"
   [client points]
-  (post-points client (points-to-line-prot points)))
+  (post-points-9 client (points-to-line-prot points)))
 
 ;;
 ;; ## Query time-series
