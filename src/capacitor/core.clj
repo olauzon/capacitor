@@ -781,10 +781,12 @@
                                     :throw-entire-message? true } (:post-opts client))) :status ))))
 
 (defn escape-key
+  "Keys for series and tags in influx 0.9 need to have spaces and comas escaped"
   [key]
   (-> key (.replace "," "\\,") (.replace " " "\\ ")))
 
 (defn convert-val
+  "Converts value of fields to string value compatible with influx 0.9"
   [val]
   (cond (string? val) (str "\"" (.replace val "\"" "\\\"") "\"")
         (integer? val) (str val "i")
@@ -801,17 +803,18 @@
       (clojure.string/join "," equaled)))
 
 (defn convert-tags-pairs
-  "Converts seq of key-value pairs to influx 0.9 key-value pairs string"
+  "Converts seq of tag key-value pairs to influx 0.9 key-value pairs string"
   [pairs]
   (let [escape-fn (fn [[key val]][(escape-key key) (escape-key val)])]
     (convert-pairs pairs escape-fn)))
 
 (defn convert-fields-pairs
+  "Converts seq of field key-value pairs to influx 0.9 key-value pairs string"
   [pairs]
-  (convert-pairs pairs  escape-field-key-value))
+  (convert-pairs pairs escape-field-key-value))
 
 (defn point-to-line-prot
-  "Converts single point to influxDb-0.9 line protocol. Tags and fields should be a seq of key-value pairs."
+  "Converts single point to influxDb-0.9 line protocol. Tags and fields should be a seq of key-value pairs"
   ([key tags fields]
   (let [key-influx (escape-key key)
         tags-influx (convert-tags-pairs tags)
