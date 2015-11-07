@@ -784,13 +784,6 @@
   [key]
   (-> key (.replace "," "\\,") (.replace " " "\\ ")))
 
-(defn convert-tags-pairs
-  "Converts seq of key-value pairs to influx 0.9 key-value pairs string"
-  [pairs]
-  (let [escaped (map (fn [[key val]][(escape-key key) (escape-key val)]) (partition 2 pairs))
-        equaled (map  #(clojure.string/join "=" %) escaped)]
-    (clojure.string/join "," equaled)))
-
 (defn convert-val
   [val]
   (cond (string? val) (str "\"" (.replace val "\"" "\\\"") "\"")
@@ -801,19 +794,39 @@
   [[key val]]
   [(escape-key key) (convert-val val)])
 
+(defn convert-pairs
+  [pairs escape-fn]
+    (let [escaped (map escape-fn (partition 2 pairs))
+        equaled (map  #(clojure.string/join "=" %) escaped)]
+      (clojure.string/join "," equaled)))
+
+(defn convert-tags-pairs
+  "Converts seq of key-value pairs to influx 0.9 key-value pairs string"
+  [pairs]
+  (let [escape-fn (fn [[key val]][(escape-key key) (escape-key val)])]
+    (convert-pairs pairs escape-fn)))
+
 (defn convert-fields-pairs
   [pairs]
-  (let [escaped (map escape-field-key-value (partition 2 pairs))
-        equaled (map  #(clojure.string/join "=" %) escaped)]
-    (clojure.string/join "," equaled)))
+  (convert-pairs pairs  escape-field-key-value))
 
 (defn point-to-line-prot
   "Converts single point to influxDb-0.9 line protocol. Tags and fields should be a seq of key-value pairs."
-  [key tags fields]
+  ([key tags fields]
   (let [key-influx (escape-key key)
         tags-influx (convert-tags-pairs tags)
         fields-influx (convert-fields-pairs fields)]
     (str key-influx (if (empty? tags-influx) "" (str "," tags-influx)) " " fields-influx)))
+  ([key tags fields timestamp]
+   (str (point-to-line-prot key tags fields) " " timestamp)))
+
+(defn points-to-line-prot
+  [points]
+  (let [conver-fn (fn [[key tags fields & timestamp]]
+                    (if (nil? timestamp)
+                      (point-to-line-prot key tags fields)
+                      (point-to-line-prot key tags fields (first timestamp))))]
+    (->> points (map conver-fn) (clojure.string/join "\n"))))
 
 (defn post-points
   "Post points to database based upon the InfluxDB version"
