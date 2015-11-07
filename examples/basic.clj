@@ -38,6 +38,9 @@
   {:user "joe"}
   {:user "cannonball"} ])
 
+;;Example for InfluxDB-0.9
+(post-points-line-prot client [["firstSeries" [] ["value" 2 "valueString" "testString"]] ["secondSeries" ["tag" "tagVal" "anotherTag" "anotherTagVal"] ["value" 1] 100]])
+
 (def query
   (str
     "SELECT COUNT(email) "
