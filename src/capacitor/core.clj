@@ -780,6 +780,35 @@
                                     :content-type          :text
                                     :throw-entire-message? true } (:post-opts client))) :status ))))
 
+(defn escape-key
+  [key]
+  (-> key (.replace "," "\\,") (.replace " " "\\ ")))
+
+(defn convert-tags-pairs
+  "Converts seq of key-value pairs to influx 0.9 key-value pairs string"
+  [pairs]
+  (let [escaped (map (fn [[key val]][(escape-key key) (escape-key val)]) (partition 2 pairs))
+        equaled (map  #(clojure.string/join "=" %) escaped)]
+    (clojure.string/join "," equaled)))
+
+(defn escape-field-key-value
+  [[key val]]
+  [(escape-key key) (str "\"" (.replace val "\"" "\\\"") "\"")])
+
+(defn convert-fields-pairs
+  [pairs]
+  (let [escaped (map escape-field-key-value (partition 2 pairs))
+        equaled (map  #(clojure.string/join "=" %) escaped)]
+    (clojure.string/join "," equaled)))
+
+(defn post-point-9
+  "Post single point to influxDb-0.9. Tags and fields should be a seq of key-value pairs."
+  [client key tags fields]
+  (let [key-influx (escape-key key)
+        tags-influx (convert-tags-pairs tags)
+        fields-influx (convert-fields-pairs fields)]
+    (post-points-9 client (str key-influx "," tags-influx " " fields-influx))))
+
 (defn post-points
   "Post points to database based upon the InfluxDB version"
   ([client points]
@@ -884,4 +913,3 @@
    (fn [{:strs [columns values]}]
      (map (partial zipmap (map keyword columns)) values))
    (flatten (map #(get % "series") (get (json/parse-string ((get-series-req client) :body)) "results")))))
-
