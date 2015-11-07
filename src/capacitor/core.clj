@@ -781,12 +781,12 @@
                                     :throw-entire-message? true } (:post-opts client))) :status ))))
 
 (defn escape-key
-  "Keys for series and tags in influx 0.9 need to have spaces and comas escaped"
+  "Keys for series and tags in InfluxDB-0.9 need to have spaces and comas escaped"
   [key]
   (-> key (.replace "," "\\,") (.replace " " "\\ ")))
 
 (defn convert-val
-  "Converts value of fields to string value compatible with influx 0.9"
+  "Converts value of field to value compatible with InfluxDB-0.9"
   [val]
   (cond (string? val) (str "\"" (.replace val "\"" "\\\"") "\"")
         (integer? val) (str val "i")
@@ -803,18 +803,18 @@
       (clojure.string/join "," equaled)))
 
 (defn convert-tags-pairs
-  "Converts seq of tag key-value pairs to influx 0.9 key-value pairs string"
+  "Converts seq of tag key-value pairs to InfluxDB-0.9 key-value pairs string"
   [pairs]
   (let [escape-fn (fn [[key val]][(escape-key key) (escape-key val)])]
     (convert-pairs pairs escape-fn)))
 
 (defn convert-fields-pairs
-  "Converts seq of field key-value pairs to influx 0.9 key-value pairs string"
+  "Converts seq of field key-value pairs to InfluxDB-0.9 key-value pairs string"
   [pairs]
   (convert-pairs pairs escape-field-key-value))
 
 (defn point-to-line-prot
-  "Converts single point to influxDb-0.9 line protocol. Tags and fields should be a seq of key-value pairs"
+  "Converts single point to InfluxDB-0.9 line protocol. Tags and fields should be a seq of key-value pairs"
   ([key tags fields]
   (let [key-influx (escape-key key)
         tags-influx (convert-tags-pairs tags)
@@ -825,11 +825,11 @@
 
 (defn points-to-line-prot
   [points]
-  (let [conver-fn (fn [[key tags fields & timestamp]]
+  (let [convert-fn (fn [[key tags fields & timestamp]]
                     (if (nil? timestamp)
                       (point-to-line-prot key tags fields)
                       (point-to-line-prot key tags fields (first timestamp))))]
-    (->> points (map conver-fn) (clojure.string/join "\n"))))
+    (->> points (map convert-fn) (clojure.string/join "\n"))))
 
 (defn post-points
   "Post points to database based upon the InfluxDB version"
@@ -841,6 +841,11 @@
    (case (:version client)
      "0.8" (post-points-8 client series-name points)
      "0.9" (post-points-9 client points))))
+
+(defn post-points-line-prot
+  "Posts points to InfluxDB-0.9. Converts points to InfluxDB line-protocol. Points should be seq of elements. Each element is sequence of key tags fields and optionaly timestamp"
+  [client points]
+  (post-points client (points-to-line-prot points)))
 
 ;;
 ;; ## Query time-series
