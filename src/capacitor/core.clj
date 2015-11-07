@@ -791,9 +791,15 @@
         equaled (map  #(clojure.string/join "=" %) escaped)]
     (clojure.string/join "," equaled)))
 
+(defn convert-val
+  [val]
+  (cond (string? val) (str "\"" (.replace val "\"" "\\\"") "\"")
+        (integer? val) (str val "i")
+        :else val))
+
 (defn escape-field-key-value
   [[key val]]
-  [(escape-key key) (str "\"" (.replace val "\"" "\\\"") "\"")])
+  [(escape-key key) (convert-val val)])
 
 (defn convert-fields-pairs
   [pairs]
@@ -801,13 +807,13 @@
         equaled (map  #(clojure.string/join "=" %) escaped)]
     (clojure.string/join "," equaled)))
 
-(defn post-point-9
-  "Post single point to influxDb-0.9. Tags and fields should be a seq of key-value pairs."
-  [client key tags fields]
+(defn point-to-line-prot
+  "Converts single point to influxDb-0.9 line protocol. Tags and fields should be a seq of key-value pairs."
+  [key tags fields]
   (let [key-influx (escape-key key)
         tags-influx (convert-tags-pairs tags)
         fields-influx (convert-fields-pairs fields)]
-    (post-points-9 client (str key-influx "," tags-influx " " fields-influx))))
+    (str key-influx (if (empty? tags-influx) "" (str "," tags-influx)) " " fields-influx)))
 
 (defn post-points
   "Post points to database based upon the InfluxDB version"
