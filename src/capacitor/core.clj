@@ -1,5 +1,5 @@
 (ns capacitor.core
-  (:use [clojure.string :only [split]])
+  (:use [clojure.string :only [split escape join]])
   (:require [clj-http.client :as http-client]
             [clojure.set :as set]
             [cheshire.core   :as json])
@@ -783,7 +783,7 @@
 (defn escape-key
   "Keys for series and tags in InfluxDB-0.9 need to have spaces and comas escaped"
   [key]
-  (-> key (.replace "," "\\,") (.replace " " "\\ ")))
+ (escape key {\space "\\ " \, "\\,"}))
 
 (defn convert-val
   "Converts value of field to value compatible with InfluxDB-0.9"
@@ -799,8 +799,8 @@
 (defn convert-pairs
   [pairs escape-fn]
     (let [escaped (map escape-fn (partition 2 pairs))
-        equaled (map  #(clojure.string/join "=" %) escaped)]
-      (clojure.string/join "," equaled)))
+        equaled (map  #(join "=" %) escaped)]
+      (join "," equaled)))
 
 (defn convert-tags-pairs
   "Converts seq of tag key-value pairs to InfluxDB-0.9 key-value pairs string"
@@ -829,7 +829,7 @@
                     (if (nil? timestamp)
                       (point-to-line-prot key tags fields)
                       (point-to-line-prot key tags fields (first timestamp))))]
-    (->> points (map convert-fn) (clojure.string/join "\n"))))
+    (->> points (map convert-fn) (join "\n"))))
 
 (defn post-points
   "Post points to database based upon the InfluxDB version"
