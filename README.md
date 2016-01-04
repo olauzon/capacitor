@@ -45,7 +45,8 @@ The `default-client` options are:
   :port     8086
   :username "root"
   :password "root"
-  :db       "default-db" }
+  :db       "default-db"
+  :version  "0.9" }
 ```
 
 ### Create the configured database
@@ -282,9 +283,10 @@ API Docs
   - [@pradeepchhetri](https://github.com/pradeepchhetri)
   - [@rborer](https://github.com/rborer)
   - [@jayp](https://github.com/jayp)
+  - [@kfirmanty](https://github.com/kfirmanty)
 
 ## License
 
-Copyright © 2013–2014 Olivier Lauzon
+Copyright © 2013–2015 Olivier Lauzon
 
 Distributed under the Eclipse Public License.
