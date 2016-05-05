@@ -1,12 +1,12 @@
 Capacitor  [![Build Status](https://travis-ci.org/olauzon/capacitor.png?branch=master)](https://travis-ci.org/olauzon/capacitor)
 =========
 
-A Clojure client for [InfluxDB](http://influxdb.org), a scalable open-source
-time-series events and metrics database.
+A Clojure client for [InfluxDB](https://influxdata.com/time-series-platform/influxdb/).
 
-Follow the [download instructions on influxdb.org]
-(http://influxdb.org/download/) to install the latest version of InfluxDB.
+Follow the [download instructions on influxdb.com]
+(https://influxdata.com/downloads/) to install the latest version of InfluxDB.
 
+**Support for InfluxDB v0.8.x is removed starting with v0.6.0.**
 
 Installation
 ------------
@@ -17,264 +17,150 @@ Capacitor is distributed via [Clojars](https://clojars.org/capacitor). Add the
 following to your dependencies in `project.clj`:
 
 ```clj
-:dependencies [[capacitor "0.5.0-SNAPSHOT"]]
+:dependencies [[capacitor "0.6.0"]]
 ```
 
 
 Usage
 -----
 
-### Require in your app
+### Require public functions
 
 ```clj
-(require '[capacitor.core :as influx])
+(use 'capacitor.core)
 ```
 
 ### Configure a client
 
 ```clj
-(def client
-  (influx/make-client {:db "my-new-db"}))
+(def client (make-client {:db "mynewdb"}))
 ```
 
 The `default-client` options are:
 
 ```clj
-{ :host     "localhost"
-  :scheme   "http"
-  :port     8086
-  :username "root"
-  :password "root"
-  :db       "default-db"
-  :version  "0.9" }
+{:host     "localhost"
+ :scheme   "http"
+ :port     8086
+ :username "root"
+ :password "root"
+ :db       "testdb"
+ :version  "0.9"}
 ```
 
-### Create the configured database
+### Get database server version
 
 ```clj
-(influx/create-db client)
-;=> 201
+(version client)
+;; => "0.11.0"
 ```
 
-Returns HTTP status code `201` on success.
-
-### Delete the configured database
+### Ping database server
 
 ```clj
-(influx/delete-db client)
-;=> 204
+(ping client)
+;; => 2.479 (response time in ms)
 ```
 
-Returns HTTP status code `204` on success.
+### Create a database
+
+```clj
+(create-db client)
+;; => true
+```
+
+### List databases
+
+```clj
+(list-dbs client)
+;; => ("_internal" "mynewdb")
+```
 
 ### Create a database user
 
 ```clj
-(influx/create-db-user client "myuser" "mypassword")
-;=> 200
+(create-db-user client "myuser" "mypassword")
+;; => true
 ```
 
-Returns HTTP status code `200` on success.
+### List database users
+
+```clj
+(list-db-users client)
+;; => [{:columns ["user" "admin"], :values [["myuser" false]]}]
+```
+
+You can also zipmap columns with their values adding a `:results` key:
+
+```clj
+(list-db-users client true)
+;; => ({:results ({:admin false, :user "myuser"})})
+```
 
 ### Configure a client for the database user
 
 ```clj
-(def c
-  (influx/make-client {
-    :db       "my-new-db"
-    :username "myuser"
-    :password "mypassword" }))
+(def c (make-client {:db "mynewdb" :username "myuser" :password "mypassword"}))
 ```
 
-### Post events to "logins" time series
+### Writing data points
+
+
+A point can be a map containing the following keys:
 
 ```clj
-(influx/post-points c "logins" [
-  {:email "john@gmail.com"}
-  {:email "john@yahoo.com"}
-  {:email "john@hotmail.com"}
-  {:email "jill@gmail.com"}
-  {:email "jason@gmail.com"}
-  {:email "alice@yahoo.com"}
-  {:email "bob@mac.com"} ])
-;=> 200
+(write-point c
+  {:measurement "cpu_load"
+   :tags        {"host" "1" "dc" 1}
+   :fields      {"value" 1.1}
+   :timestamp   1457624412})
 ```
-Returns an HTTP status code `200` on success.
 
+Which can be shortened to a vector:
+
+```clj
+(write-point c
+;; measurement tags                fields        timestamp
+  ["cpu_load"  {"host" "1" "dc" 1} {"value" 1.2} 1457624413])
+```
+
+You can write multiple points at once with `write-points`:
+
+```clj
+(write-points c
+  [{:measurement "cpu_load"
+     :tags        {"host" "2" "dc" 1}
+     :fields      {"value" 0.4}
+     :timestamp   1457624412}
+    {:measurement "cpu_load"
+     :tags        {"host" "3" "dc" 1}
+     :fields      {"value" 0.8}
+     :timestamp   1457624412}])
+```
+
+Or use the vector form for points:
+
+```clj
+(write-points c
+  [["cpu_load" {"host" "8" "dc" 2} {"value" 0.7} 1457624412]
+   ["cpu_load" {"host" "9" "dc" 2} {"value" 0.5} 1457624412]])
+```
 
 ### Write SQLish queries
 
 ```clj
-(def query-00
-  (str
-    "SELECT COUNT(email) "
-    "FROM logins "
-    "GROUP BY time(10m) "
-    "WHERE email =~ /.*gmail\\.com/"))
+(db-query c "SHOW SERIES" true)
 
-(def query-01
-  (str
-    "SELECT COUNT(email) "
-    "FROM logins "
-    "GROUP BY time(1m)"))
+(db-query c "SELECT * FROM cpu_load" true)
+
+(db-query c "SELECT MAX(value) FROM cpu_load GROUP BY dc, host" true)
 ```
-
-### Submit queries
-
-```clj
-(influx/get-query c query-00)
-```
-
-Returns:
-
-```clj
-[{:name "logins", :count 3, :sequence_number 1, :time 1384662000000}
- {:name "logins", :count 3, :sequence_number 1, :time 1384661400000}]
-```
-
-```clj
-(influx/get-query c query-01)
-```
-
-Returns:
-
-```clj
-[{:name "logins", :count 7, :sequence_number 1, :time 1384662540000}
- {:name "logins", :count 7, :sequence_number 1, :time 1384661760000}]
-```
-
-See [examples/basic.clj]
-(https://github.com/olauzon/capacitor/blob/master/examples/basic.clj)
-for these examples in one file.
-
-
-Async API
----------
-
-Capacitor has an asynchronous API for event batch accumulation and submission.
-
-### Require in your app
-
-```clj
-;; Base InfluxDB library
-(require '[capacitor.core :as influx])
-
-;; Async API
-(require '[capacitor.async :as influx-async])
-```
-
-### Define an InfluxDB client
-
-```clj
-(def c
-  (influx/make-client {
-    :db       "my-new-db"
-    :username "myuser"
-    :password "mypassword" }))
-```
-
-### Make a channel to buffer incoming events
-
-```clj
-(def events-in (influx-async/make-chan))
-```
-
-### Make a channel to collect post responses
-
-```clj
-(def resp-out (influx-async/make-chan))
-```
-
-### Start the batch processing loop
-
-With a batch size of max 10 events and max 5 seconds
-
-```clj
-(influx-async/run! events-in resp-out c 10 5000)
-```
-
-### Enqueue events
-
-```clj
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "paul@gmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "signups"
-  :email  "john@gmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "ringo@gmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "george@gmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "signups"
-  :email  "syd@hotmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "roger@hotmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "nick@hotmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "rick@hotmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "logins"
-  :email  "david@hotmail.com" })
-
-(influx-async/enqueue events-in {
-  :series "signups"
-  :email  "sting@yahoo.com" })
-
-(dotimes [i 12]
-  (influx-async/enqueue events-in {
-    :series "logins"
-    :email  (str "i" i "@i.com") }))
-```
-
-### Query the database
-
-```clj
-(def query-00
-  (str
-    "SELECT COUNT(email) "
-    "FROM logins "
-    "GROUP BY time(1s)"))
-
-(influx/get-query c query-00)
-```
-
-### Close the `run!` loop
-
-```clj
-;; Require core.async
-(require '[clojure.core.async :as async])
-
-(async/close! events-in)
-```
-
-
-See [examples/async.clj]
-(https://github.com/olauzon/capacitor/blob/master/examples/async.clj)
-for these examples in one file.
 
 
 API Docs
 --------
 
 [API docs (codox)](http://olauzon.github.io/capacitor/docs/codox/index.html)
-|
-[API docs (Marginalia)](http://olauzon.github.io/capacitor/docs/marg/index.html)
 
 
 ## Contributors
@@ -287,6 +173,6 @@ API Docs
 
 ## License
 
-Copyright © 2013–2015 Olivier Lauzon
+Copyright © 2013–2016 Olivier Lauzon
 
 Distributed under the Eclipse Public License.

@@ -1,33 +1,18 @@
-(require '[capacitor.core :as influx])
+(use 'capacitor.core)
 
-(def client (influx/make-client {:db "my-new-db"}))
+(def client (make-client {:db "mynewdb"}))
 
-(influx/create-db client)
+; Update user password
+(update-user-password client "myuser" "mynewpassword")
 
-(influx/create-shard-space client {:name "example" :regex "/.*/" :retention-policy "1d" :shard-duration "1h" :replication-factor 1 :split 1})
+; Show user grants
+(list-user-permissions client "myuser")
 
-(influx/get-db-users client)
+; Grant user permissions
+(grant-db-user-permissions client "myuser" :read)
 
-(influx/create-db-user client "myuser" "mypassword")
+; Revoke user permissions
+(revoke-db-user-permissions client "myuser" :read)
 
-(influx/get-db-users client)
-
-(influx/create-db-user client "myuser2" "mypassword2")
-
-(influx/get-db-users client)
-
-(influx/delete-db-user client "myuser2")
-
-(influx/get-db-users client)
-
-(influx/create-db-user client "myuser2" "mypassword2")
-
-(influx/update-db-user client "myuser2" { :password "mypassword42" })
-
-(influx/create-admin-user client "newuser" "newpassword")
-
-(influx/update-admin-user client "newuser" {:password "password"})
-
-(influx/get-admin-users client)
-
-(influx/delete-admin-user client "newuser")
+; Delete user
+(delete-user client "myuser")
