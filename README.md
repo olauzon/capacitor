@@ -1,6 +1,9 @@
 Capacitor  [![Build Status](https://travis-ci.org/olauzon/capacitor.png?branch=master)](https://travis-ci.org/olauzon/capacitor)
 =========
 
+PLEASE NOTE THIS LIBRARY IS NO LONGER MAINTAINED!!!
+===================================================
+
 A Clojure client for [InfluxDB](https://influxdata.com/time-series-platform/influxdb/).
 
 Follow the [download instructions on influxdb.com]
